@@ -5,6 +5,10 @@ const client = twilio(
   process.env.TWILIO_AUTH_TOKEN
 );
 
+// Check if we're in local development
+const isLocalDev = process.env.NODE_ENV === 'development' || 
+                  process.env.TWILIO_ACCOUNT_SID === 'test_sid';
+
 export async function sendEventInvitation(
   participantPhone: string,
   participantName: string,
@@ -14,6 +18,21 @@ export async function sendEventInvitation(
 ) {
   const message = `${creatorName} invited you to "${eventName}". Submit your availability: ${availabilityUrl}`;
   
+  if (isLocalDev) {
+    // Mock mode for local development
+    console.log(`📱 MOCK SMS would be sent to ${participantPhone}:`);
+    console.log(`   Message: ${message}`);
+    console.log(`   URL: ${availabilityUrl}`);
+    
+    return { 
+      success: true, 
+      sid: `MOCK_${Date.now()}`,
+      message: message,
+      url: availabilityUrl 
+    };
+  }
+  
+  // Real SMS for production
   try {
     const result = await client.messages.create({
       body: message,
@@ -49,6 +68,22 @@ export async function sendEventConfirmation(
   customMessage: string,
   eventDetailsUrl: string
 ) {
+  if (isLocalDev) {
+    // Mock mode for local development
+    console.log(`📱 MOCK CONFIRMATION SMS would be sent to ${participantPhone}:`);
+    console.log(`   To: ${participantName}`);
+    console.log(`   Message: ${customMessage}`);
+    console.log(`   Event URL: ${eventDetailsUrl}`);
+    
+    return { 
+      success: true, 
+      sid: `CONFIRM_MOCK_${Date.now()}`,
+      message: customMessage,
+      recipient: participantName
+    };
+  }
+
+  // Real SMS for production
   try {
     const result = await client.messages.create({
       body: customMessage,
