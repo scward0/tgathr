@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 
 interface RouteParams {
   params: {
@@ -8,7 +7,14 @@ interface RouteParams {
 }
 
 export async function POST(request: Request, { params }: RouteParams) {
+  // During build time, just return a placeholder response
+  if (!process.env.DATABASE_URL) {
+    return NextResponse.json({ error: 'Database not available during build' }, { status: 503 });
+  }
+
   try {
+    const { prisma } = await import('@/lib/prisma');
+    
     const body = await request.json();
     console.log('Finalize request received:', body);
 

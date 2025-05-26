@@ -1,13 +1,19 @@
 import { NextResponse } from 'next/server';
-import { eventFormSchema } from '@/types/event';
-import { z } from 'zod';
-import { randomUUID } from 'crypto';
-import { prisma } from '@/lib/prisma';
-import { sendEventInvitation } from '@/lib/sms';
-import { Prisma } from '@prisma/client'; // Add this import
 
 export async function POST(request: Request) {
+  // During build time, just return a placeholder response
+  if (!process.env.DATABASE_URL) {
+    return NextResponse.json({ error: 'Database not available during build' }, { status: 503 });
+  }
+
   try {
+    // Dynamic imports
+    const { eventFormSchema } = await import('@/types/event');
+    const { z } = await import('zod');
+    const { randomUUID } = await import('crypto');
+    const { prisma } = await import('@/lib/prisma');
+    const { sendEventInvitation } = await import('@/lib/sms');
+    
     // Parse and validate request body
     const body = await request.json();
     
@@ -19,9 +25,9 @@ export async function POST(request: Request) {
     
     const validatedData = eventFormSchema.parse(processedBody);
 
-    // Create event in database (your existing code)
-    const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      // ... your existing event creation code stays exactly the same ...
+    // Start a transaction to ensure data consistency
+    const result = await prisma.$transaction(async (tx: any) => {
+      // Your existing transaction logic here - keep it exactly the same
       const participantData = validatedData.participants.map((participant) => ({
         name: participant.name,
         phoneNumber: participant.phoneNumber,
@@ -67,10 +73,10 @@ export async function POST(request: Request) {
       return event;
     });
 
-    // NEW: Send SMS invitations to all participants
+    // Send SMS invitations
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
     const smsResults = await Promise.all(
-      result.participants.map(async (participant: { phoneNumber: string; name: string; token: string }) => {
+      result.participants.map(async (participant: any) => {
         const availabilityUrl = `${appUrl}/respond/${participant.token}`;
         return await sendEventInvitation(
           participant.phoneNumber,
@@ -82,23 +88,21 @@ export async function POST(request: Request) {
       })
     );
 
-    // Log SMS results
     console.log('SMS sending results:', smsResults);
 
-    // Format the response (your existing code)
     return NextResponse.json({
       success: true,
       id: result.id,
       name: result.name,
       description: result.description,
       eventType: result.eventType,
-      smsResults: smsResults, // Include SMS results in response
+      smsResults: smsResults,
       creator: {
         id: result.creator.id,
         name: result.creator.name,
         token: result.creator.token,
       },
-      participants: result.participants.map((p) => ({
+      participants: result.participants.map((p: any) => ({
         id: p.id,
         name: p.name,
         token: p.token,
@@ -108,6 +112,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('Error creating event:', error);
     
+    const { z } = await import('zod');
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: 'Validation error', details: error.errors },

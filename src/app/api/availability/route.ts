@@ -1,19 +1,26 @@
 import { NextResponse } from 'next/server';
-import { z } from 'zod';
-import { prisma } from '@/lib/prisma';
-
-// Validation schema for availability submission
-const availabilitySchema = z.object({
-  eventId: z.string(),
-  participantToken: z.string(),
-  timeSlots: z.array(z.object({
-    startTime: z.string().transform((str) => new Date(str)),
-    endTime: z.string().transform((str) => new Date(str)),
-  })),
-});
 
 export async function POST(request: Request) {
+  // During build time, just return a placeholder response
+  if (!process.env.DATABASE_URL) {
+    return NextResponse.json({ error: 'Database not available during build' }, { status: 503 });
+  }
+
   try {
+    // Dynamic imports to avoid build-time issues
+    const { z } = await import('zod');
+    const { prisma } = await import('@/lib/prisma');
+
+    // Validation schema for availability submission
+    const availabilitySchema = z.object({
+      eventId: z.string(),
+      participantToken: z.string(),
+      timeSlots: z.array(z.object({
+        startTime: z.string().transform((str) => new Date(str)),
+        endTime: z.string().transform((str) => new Date(str)),
+      })),
+    });
+
     const body = await request.json();
     const validatedData = availabilitySchema.parse(body);
 
@@ -58,6 +65,8 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('Error saving availability:', error);
     
+    // Import z here for error checking
+    const { z } = await import('zod');
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: 'Invalid data format', details: error.errors },

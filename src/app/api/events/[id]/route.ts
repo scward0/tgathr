@@ -1,6 +1,4 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { SchedulingAlgorithm } from '@/lib/scheduling-algorithm';
 
 interface RouteParams {
   params: {
@@ -9,7 +7,16 @@ interface RouteParams {
 }
 
 export async function GET(request: Request, { params }: RouteParams) {
+  // During build time, just return a placeholder response
+  if (!process.env.DATABASE_URL) {
+    return NextResponse.json({ error: 'Database not available during build' }, { status: 503 });
+  }
+
   try {
+    const { prisma } = await import('@/lib/prisma');
+    const { SchedulingAlgorithm } = await import('@/lib/scheduling-algorithm');
+    
+    // Your existing GET logic here - keep it exactly the same
     const event = await prisma.event.findUnique({
       where: { id: params.id },
       include: {
@@ -60,7 +67,7 @@ export async function GET(request: Request, { params }: RouteParams) {
       })
       .sort((a, b) => b.participantCount - a.participantCount);
 
-    // NEW: Run the smart algorithm
+    // Run the smart algorithm
     const algorithm = new SchedulingAlgorithm(
       {
         id: event.id,
@@ -123,7 +130,7 @@ export async function GET(request: Request, { params }: RouteParams) {
         responseRate: Math.round((respondedParticipants / totalParticipants) * 100),
       },
       popularTimes: popularTimes.slice(0, 5),
-      smartRecommendations, // The new smart algorithm results
+      smartRecommendations,
     });
 
   } catch (error) {
