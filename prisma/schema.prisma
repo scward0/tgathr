@@ -1,0 +1,90 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Event {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  
+  // Event type and metadata
+  eventType   String   // 'single-day' or 'multi-day'
+  
+  // Availability collection window (when we're asking people to check)
+  availabilityStartDate DateTime
+  availabilityEndDate   DateTime
+  
+  // Single-day event preferences
+  preferredTime String?  // 'morning', 'afternoon', 'evening', 'all-day'
+  duration      String?  // '1-hour', '2-hours', '3-hours', '4-hours', 'all-day'
+  
+  // Multi-day event preferences  
+  eventLength      String? // '2-days', '3-days', '1-week', '2-weeks'
+  timingPreference String? // 'weekends-only', 'include-weekdays', 'flexible'
+  
+  // Final decided dates (set after algorithm runs)
+  finalStartDate DateTime?
+  finalEndDate   DateTime?
+  isFinalized    Boolean  @default(false)
+  
+  // Timestamps and expiration
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  expiresAt DateTime // Set to 30 days from creation in API
+  
+  // Relationships
+  creator      Participant  @relation("EventCreator", fields: [creatorId], references: [id])
+  creatorId    String
+  participants Participant[] @relation("EventParticipants")
+  timeSlots    TimeSlot[]
+  
+  @@index([expiresAt])
+  @@index([creatorId])
+  @@index([isFinalized])
+}
+
+model Participant {
+  id          String   @id @default(cuid())
+  name        String
+  phoneNumber String
+  token       String   @unique // For secure access to availability form
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relationships
+  createdEvents Event[]    @relation("EventCreator")
+  events        Event[]    @relation("EventParticipants")
+  timeSlots     TimeSlot[]
+  
+  @@unique([phoneNumber, token])
+  @@index([phoneNumber])
+  @@index([token])
+}
+
+model TimeSlot {
+  id        String   @id @default(cuid())
+  startTime DateTime
+  endTime   DateTime
+  
+  // Track submission status
+  submittedAt DateTime @default(now())
+  
+  // Relationships
+  event         Event       @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId       String
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  participantId String
+  
+  @@index([eventId])
+  @@index([participantId])
+  @@index([startTime, endTime])
+}
