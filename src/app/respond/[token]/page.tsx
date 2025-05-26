@@ -116,7 +116,20 @@ export default async function ResponsePage({ params }: ResponsePageProps) {
           </h2>
           <div className="text-center py-12 text-gray-400">
             <div className="bg-gray-800 rounded-lg p-6">
-                <AvailabilityForm event={event} participant={participant} />
+            <AvailabilityForm 
+                  event={{
+                    id: event.id,
+                    name: event.name,
+                    eventType: event.eventType,
+                    availabilityStartDate: event.availabilityStartDate.toISOString(),
+                    availabilityEndDate: event.availabilityEndDate.toISOString(),
+                    preferredTime: event.preferredTime || undefined,
+                    duration: event.duration || undefined,
+                    eventLength: event.eventLength || undefined,
+                    timingPreference: event.timingPreference || undefined,
+                  }}
+                  participant={participant} 
+                />
             </div>
           </div>
         </div>

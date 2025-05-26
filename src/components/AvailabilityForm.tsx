@@ -12,6 +12,8 @@ interface AvailabilityFormProps {
     availabilityEndDate: string;
     preferredTime?: string;
     duration?: string;
+    eventLength?: string;        // Add this
+    timingPreference?: string;   // Add this
   };
   participant: {
     id: string;
@@ -98,22 +100,22 @@ export function AvailabilityForm({ event, participant }: AvailabilityFormProps) 
     });
   };
 
-  const isSlotSelected = (date: Date, timeSlot: string) => {
-    let startTime: string;
-    
-    if (timeSlot === 'all-day') {
-      startTime = '09:00';
-    } else if (timeSlot.includes('-')) {
-      [startTime] = timeSlot.split('-');
-    } else {
-      startTime = '09:00';
-    }
-    
-    return selectedSlots.some(slot => 
-      format(slot.date, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd') && 
-      slot.startTime === startTime
-    );
-  };
+const isSlotSelected = (date: Date, timeSlot: string) => {
+  let startTime: string;
+  
+  if (timeSlot === 'all-day') {
+    startTime = '09:00';
+  } else if (timeSlot.includes('-')) {
+    [startTime] = timeSlot.split('-');
+  } else {
+    startTime = '09:00';
+  }
+  
+  return selectedSlots.some(slot => 
+    format(slot.date, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd') && 
+    slot.startTime === startTime
+  );
+};
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
