@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
+
+    // Debug logging
+    console.log('DATABASE_URL exists:', !!process.env.DATABASE_URL);
+    console.log('NODE_ENV:', process.env.NODE_ENV);
+
   // During build time, just return a placeholder response
   if (!process.env.DATABASE_URL) {
     return NextResponse.json({ error: 'Database not available during build' }, { status: 503 });
