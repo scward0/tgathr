@@ -1,5 +1,7 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import { notFound } from 'next/navigation';
-import { prisma } from '@/lib/prisma';
 import { AvailabilityForm } from '@/components/AvailabilityForm';
 
 interface ResponsePageProps {
@@ -8,38 +10,50 @@ interface ResponsePageProps {
   };
 }
 
-async function getParticipantAndEvent(token: string) {
-  try {
-    const participant = await prisma.participant.findUnique({
-      where: { token },
-      include: {
-        events: {
-          include: {
-            creator: true,
-          },
-        },
-      },
-    });
+export default function ResponsePage({ params }: ResponsePageProps) {
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-    if (!participant || participant.events.length === 0) {
-      return null;
+  useEffect(() => {
+    async function fetchParticipantData() {
+      try {
+        const response = await fetch(`/api/participants/${params.token}`);
+        
+        if (!response.ok) {
+          if (response.status === 404) {
+            notFound();
+          }
+          throw new Error('Failed to fetch participant data');
+        }
+        
+        const participantData = await response.json();
+        setData(participantData);
+      } catch (err) {
+        console.error('Error fetching participant data:', err);
+        setError('Failed to load event data');
+      } finally {
+        setLoading(false);
+      }
     }
 
-    // Get the most recent event for this participant
-    const event = participant.events[0];
-    
-    return { participant, event };
-  } catch (error) {
-    console.error('Error fetching participant/event:', error);
-    return null;
+    fetchParticipantData();
+  }, [params.token]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <div className="text-white">Loading event data...</div>
+      </div>
+    );
   }
-}
 
-export default async function ResponsePage({ params }: ResponsePageProps) {
-  const data = await getParticipantAndEvent(params.token);
-
-  if (!data) {
-    notFound();
+  if (error || !data) {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <div className="text-red-400">Error: {error || 'Event not found'}</div>
+      </div>
+    );
   }
 
   const { participant, event } = data;
@@ -109,29 +123,22 @@ export default async function ResponsePage({ params }: ResponsePageProps) {
           </p>
         </div>
 
-        {/* Availability Form Placeholder */}
+        {/* Availability Form */}
         <div className="bg-gray-800 rounded-lg p-6">
-          <h2 className="text-lg font-semibold text-white mb-4">
-            Submit Your Availability
-          </h2>
-          <div className="text-center py-12 text-gray-400">
-            <div className="bg-gray-800 rounded-lg p-6">
-            <AvailabilityForm 
-                  event={{
-                    id: event.id,
-                    name: event.name,
-                    eventType: event.eventType,
-                    availabilityStartDate: event.availabilityStartDate.toISOString(),
-                    availabilityEndDate: event.availabilityEndDate.toISOString(),
-                    preferredTime: event.preferredTime || undefined,
-                    duration: event.duration || undefined,
-                    eventLength: event.eventLength || undefined,
-                    timingPreference: event.timingPreference || undefined,
-                  }}
-                  participant={participant} 
-                />
-            </div>
-          </div>
+          <AvailabilityForm 
+            event={{
+              id: event.id,
+              name: event.name,
+              eventType: event.eventType,
+              availabilityStartDate: event.availabilityStartDate,
+              availabilityEndDate: event.availabilityEndDate,
+              preferredTime: event.preferredTime || undefined,
+              duration: event.duration || undefined,
+              eventLength: event.eventLength || undefined,
+              timingPreference: event.timingPreference || undefined,
+            }}
+            participant={participant} 
+          />
         </div>
       </div>
     </div>
