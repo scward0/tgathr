@@ -14,18 +14,29 @@ export async function sendEventInvitation(
 ) {
   const message = `${creatorName} invited you to "${eventName}". Submit your availability: ${availabilityUrl}`;
   
-  // Mock mode - just log instead of sending
-  console.log(`📱 SMS would be sent to ${participantPhone}:`);
-  console.log(`   Message: ${message}`);
-  console.log(`   URL: ${availabilityUrl}`);
-  
-  // Return mock success
-  return { 
-    success: true, 
-    sid: `MOCK_${Date.now()}`,
-    message: message,
-    url: availabilityUrl 
-  };
+  try {
+    const result = await client.messages.create({
+      body: message,
+      from: process.env.TWILIO_PHONE_NUMBER,
+      to: participantPhone,
+    });
+
+    console.log(`📱 SMS sent to ${participantPhone}: ${result.sid}`);
+    return { 
+      success: true, 
+      sid: result.sid,
+      message: message,
+      url: availabilityUrl 
+    };
+  } catch (error) {
+    console.error(`Failed to send SMS to ${participantPhone}:`, error);
+    return { 
+      success: false, 
+      error: error,
+      message: message,
+      url: availabilityUrl 
+    };
+  }
 }
 
 export async function sendEventConfirmation(
@@ -38,17 +49,26 @@ export async function sendEventConfirmation(
   customMessage: string,
   eventDetailsUrl: string
 ) {
-  // Mock mode - just log instead of sending
-  console.log(`📱 CONFIRMATION SMS would be sent to ${participantPhone}:`);
-  console.log(`   To: ${participantName}`);
-  console.log(`   Message: ${customMessage}`);
-  console.log(`   Event URL: ${eventDetailsUrl}`);
-  
-  // Return mock success
-  return { 
-    success: true, 
-    sid: `CONFIRM_${Date.now()}`,
-    message: customMessage,
-    recipient: participantName
-  };
+  try {
+    const result = await client.messages.create({
+      body: customMessage,
+      from: process.env.TWILIO_PHONE_NUMBER,
+      to: participantPhone,
+    });
+
+    console.log(`📱 Confirmation SMS sent to ${participantPhone}: ${result.sid}`);
+    return { 
+      success: true, 
+      sid: result.sid,
+      message: customMessage,
+      recipient: participantName
+    };
+  } catch (error) {
+    console.error(`Failed to send confirmation SMS to ${participantPhone}:`, error);
+    return { 
+      success: false, 
+      error: error,
+      recipient: participantName
+    };
+  }
 }
