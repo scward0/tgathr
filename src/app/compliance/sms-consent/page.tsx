@@ -71,7 +71,7 @@ export default function SMSConsentPage() {
           If you have any questions about our SMS practices or need assistance, please contact us at:
         </p>
         <p className="mb-4">
-          Email: support@tgathr.com
+          Email: scward0@gmail.com
         </p>
       </section>
 
