@@ -28,4 +28,10 @@
 //      */
 //     '/((?!auth|api/auth|_next|favicon.ico|sitemap.xml).*)',
 //   ],
-// } 
+// }
+
+// Dummy middleware to satisfy Next.js
+export function middleware() {
+  // Auth temporarily disabled
+  return;
+} 

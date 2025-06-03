@@ -33,4 +33,4 @@ export async function GET() {
 
 export async function POST() {
   return NextResponse.json({ error: 'Auth temporarily disabled' }, { status: 404 });
-} 
+}

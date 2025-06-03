@@ -51,3 +51,12 @@
 //     </div>
 //   )
 // } 
+
+// Auth temporarily disabled
+export default function AuthPage() {
+  return (
+    <div style={{ padding: 32, textAlign: 'center' }}>
+      <h1>Authentication is temporarily disabled.</h1>
+    </div>
+  );
+} 
