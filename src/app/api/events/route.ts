@@ -69,7 +69,6 @@ export async function POST(request: Request) {
           },
         },
         include: {
-          creator: true,
           participants: true,
         },
       });
@@ -88,7 +87,7 @@ export async function POST(request: Request) {
             participant.email,
             participant.name,
             result.name,
-            result.creator.name,
+            user.displayName || user.primaryEmail || 'Event Organizer',
             availabilityUrl
           );
         })
@@ -104,9 +103,9 @@ export async function POST(request: Request) {
       eventType: result.eventType,
       emailResults: emailResults,
       creator: {
-        id: result.creator.id,
-        name: result.creator.name,
-        email: result.creator.email,
+        id: user.id,
+        name: user.displayName || 'Event Organizer',
+        email: user.primaryEmail || '',
       },
       participants: result.participants.map((p: any) => ({
         id: p.id,

@@ -24,6 +24,7 @@ export default function Home() {
   const [events, setEvents] = useState<UserEvent[]>([]);
   const [eventsLoading, setEventsLoading] = useState(false);
   const [debugInfo, setDebugInfo] = useState('Initializing...');
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
 
   useEffect(() => {
     console.log('User state changed:', user);
@@ -32,6 +33,18 @@ export default function Home() {
     if (user) {
       fetchUserEvents();
     }
+  }, [user]);
+
+  // Add a timeout to handle stuck loading states
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (user === undefined) {
+        console.log('Loading timeout reached, showing fallback');
+        setLoadingTimeout(true);
+      }
+    }, 5000); // 5 second timeout
+
+    return () => clearTimeout(timer);
   }, [user]);
 
   const fetchUserEvents = async () => {
@@ -53,7 +66,7 @@ export default function Home() {
   };
 
   // Show debug info and handle loading states
-  if (user === undefined) {
+  if (user === undefined && !loadingTimeout) {
     return (
       <main className="min-h-screen flex flex-col items-center justify-center bg-gray-900">
         <div className="text-white mb-4">Loading...</div>
@@ -65,7 +78,12 @@ export default function Home() {
     );
   }
 
-  if (user === null) {
+  // If loading timeout reached, show the login page anyway
+  if (user === undefined && loadingTimeout) {
+    console.log('Treating timeout as not authenticated');
+  }
+
+  if (user === null || (user === undefined && loadingTimeout)) {
     // Not logged in - show landing page
     return (
       <main className="min-h-screen flex flex-col items-center justify-center bg-gray-900">
