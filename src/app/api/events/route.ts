@@ -27,6 +27,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
     
+    // Ensure user exists in database
+    const user = await prisma.user.findUnique({
+      where: { id: payload.userId }
+    });
+    
+    if (!user) {
+      return NextResponse.json({ error: 'User not found in database' }, { status: 401 });
+    }
+    
     // Parse and validate request body
     const body = await request.json();
     
