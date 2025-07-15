@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import { AuthProvider } from "@/contexts/AuthContext";
+import { StackProvider } from "@stackframe/stack";
+import { stackApp } from "@/lib/stack-client";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -18,9 +19,9 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body className={`${inter.className} bg-gray-900 text-white`}>
-        <AuthProvider>
+        <StackProvider app={stackApp}>
           {children}
-        </AuthProvider>
+        </StackProvider>
       </body>
     </html>
   );

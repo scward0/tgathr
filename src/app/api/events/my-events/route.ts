@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { stackServerApp } from '@/lib/stack';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,26 +12,17 @@ export async function GET(request: Request) {
   try {
     // Dynamic imports
     const { prisma } = await import('@/lib/prisma');
-    const { verifyToken } = await import('@/lib/auth');
     
-    // Check authentication from cookies
-    const { cookies } = await import('next/headers');
-    const cookieStore = cookies();
-    const token = cookieStore.get('session-id')?.value;
-    
-    if (!token) {
+    // Check authentication with Neon Auth
+    const user = await stackServerApp.getUser();
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    
-    const payload = verifyToken(token);
-    if (!payload) {
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
     // Fetch user's events
     const events = await prisma.event.findMany({
       where: {
-        creatorId: payload.userId
+        creatorId: user.id
       },
       include: {
         participants: true,

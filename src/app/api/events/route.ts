@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { stackServerApp } from '@/lib/stack';
 
 export async function POST(request: Request) {
   // During build time, just return a placeholder response
@@ -9,35 +10,16 @@ export async function POST(request: Request) {
   try {
     // Dynamic imports
     const { eventFormSchema } = await import('@/types/event');
-    const { z } = await import('zod');
     const { randomUUID } = await import('crypto');
     const { prisma } = await import('@/lib/prisma');
     const { sendEventInvitation } = await import('@/lib/email');
-    const { verifyToken } = await import('@/lib/auth');
     
-    // Check authentication from cookies
-    const { cookies } = await import('next/headers');
-    const cookieStore = cookies();
-    const token = cookieStore.get('session-id')?.value;
-    
-    if (!token) {
+    // Check authentication with Neon Auth
+    const user = await stackServerApp.getUser();
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    
-    const payload = verifyToken(token);
-    if (!payload) {
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
-    }
-    
-    // Ensure user exists in database
-    const user = await prisma.user.findUnique({
-      where: { id: payload.userId }
-    });
-    
-    if (!user) {
-      return NextResponse.json({ error: 'User not found in database' }, { status: 401 });
-    }
-    
+
     // Parse and validate request body
     const body = await request.json();
     
@@ -49,9 +31,8 @@ export async function POST(request: Request) {
     
     const validatedData = eventFormSchema.parse(processedBody);
 
-    // Start a transaction to ensure data consistency update
+    // Start a transaction to ensure data consistency
     const result = await prisma.$transaction(async (tx: any) => {
-      // Your existing transaction logic here - keep it exactly the same
       const participantData = validatedData.participants.map((participant) => ({
         name: participant.name,
         phoneNumber: participant.phoneNumber || '',
@@ -82,7 +63,7 @@ export async function POST(request: Request) {
           finalEndDate: null,
           isFinalized: false,
           expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-          creatorId: payload.userId, // Use authenticated user's ID
+          creatorId: user.id, // Use Neon Auth user ID
           participants: {
             connect: createdParticipants.map((p) => ({ id: p.id })),
           },
@@ -100,7 +81,7 @@ export async function POST(request: Request) {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
     const emailResults = await Promise.all(
       result.participants
-        .filter((participant: any) => participant.email) // Only send to participants with email
+        .filter((participant: any) => participant.email)
         .map(async (participant: any) => {
           const availabilityUrl = `${appUrl}/respond/${participant.token}`;
           return await sendEventInvitation(

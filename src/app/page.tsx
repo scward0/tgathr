@@ -1,8 +1,7 @@
 'use client'
 
 import Link from 'next/link';
-import { useAuth } from '@/contexts/AuthContext';
-import { UserMenu } from '@/components/UserMenu';
+import { useUser } from '@stackframe/stack';
 import { useEffect, useState } from 'react';
 
 interface UserEvent {
@@ -19,7 +18,7 @@ interface UserEvent {
 }
 
 export default function Home() {
-  const { user, loading } = useAuth();
+  const user = useUser();
   const [events, setEvents] = useState<UserEvent[]>([]);
   const [eventsLoading, setEventsLoading] = useState(false);
 
@@ -47,7 +46,7 @@ export default function Home() {
     }
   };
 
-  if (loading) {
+  if (!user) {
     return (
       <main className="min-h-screen flex items-center justify-center bg-gray-900">
         <div className="text-white">Loading...</div>
@@ -65,13 +64,13 @@ export default function Home() {
         </p>
         <div className="space-x-4">
           <Link 
-            href="/auth"
+            href="/handler/sign-in"
             className="px-6 py-3 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors"
           >
             Sign In
           </Link>
           <Link 
-            href="/auth"
+            href="/handler/sign-up"
             className="px-6 py-3 bg-gray-700 text-white font-medium rounded-md hover:bg-gray-600 transition-colors"
           >
             Sign Up
@@ -86,12 +85,20 @@ export default function Home() {
     <main className="min-h-screen bg-gray-900">
       <nav className="flex justify-between items-center p-6 border-b border-gray-800">
         <h1 className="text-2xl font-bold text-white">tgathr</h1>
-        <UserMenu />
+        <div className="flex items-center space-x-4">
+          <span className="text-gray-300">Welcome, {user?.displayName}!</span>
+          <button
+            onClick={() => user.signOut()}
+            className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+          >
+            Sign Out
+          </button>
+        </div>
       </nav>
       
       <div className="max-w-6xl mx-auto px-6 py-8">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-white mb-4">Welcome, {user.name}!</h2>
+          <h2 className="text-3xl font-bold text-white mb-4">Welcome, {user?.displayName}!</h2>
           <p className="text-gray-300 mb-8">Ready to organize your next event?</p>
           <Link 
             href="/events/new"
