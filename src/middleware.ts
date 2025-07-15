@@ -9,6 +9,8 @@ export function middleware(request: NextRequest) {
   if (
     pathname.startsWith('/auth') ||
     pathname.startsWith('/api/auth') ||
+    pathname.startsWith('/api/debug') ||
+    pathname.startsWith('/api/test') ||
     pathname.startsWith('/_next') ||
     pathname.includes('.') // static files
   ) {
@@ -16,7 +18,15 @@ export function middleware(request: NextRequest) {
   }
   
   // Check authentication for protected routes
-  const token = request.cookies.get('auth-token')?.value
+  let token = request.cookies.get('session-id')?.value
+  
+  // Also check Authorization header as fallback
+  if (!token) {
+    const authHeader = request.headers.get('Authorization')
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.substring(7)
+    }
+  }
   
   if (!token) {
     return NextResponse.redirect(new URL('/auth', request.url))
@@ -27,7 +37,7 @@ export function middleware(request: NextRequest) {
   if (!payload) {
     // Clear invalid cookie and redirect
     const response = NextResponse.redirect(new URL('/auth', request.url))
-    response.cookies.set('auth-token', '', { maxAge: 0 })
+    response.cookies.set('session-id', '', { maxAge: 0 })
     return response
   }
   
@@ -39,10 +49,12 @@ export const config = {
     /*
      * Match all request paths except:
      * - /auth (authentication page)
-     * - /api/auth (authentication API)
+     * - /api (all API routes)
+     * - /events (event pages - let React handle auth)
      * - /_next (Next.js internals)
      * - Static files (containing dots)
+     * - / (home page - let React handle auth)
      */
-    '/((?!auth|api/auth|_next|.*\\.).*)',
+    '/((?!auth|api|events|_next|.*\\.|$).*)',
   ],
 } 

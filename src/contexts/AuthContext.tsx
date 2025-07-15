@@ -26,8 +26,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const checkAuth = async () => {
     try {
+      // Get token from localStorage as fallback
+      const token = localStorage.getItem('auth-token')
+      const headers: Record<string, string> = {}
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`
+      }
+      
       const response = await fetch('/api/auth/me', {
         credentials: 'include',
+        headers
       })
       
       if (response.ok) {
@@ -46,31 +54,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
+      const requestBody = { action: 'login', email, password }
+      
       const response = await fetch('/api/auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'login', email, password }),
+        body: JSON.stringify(requestBody),
         credentials: 'include',
       })
 
       if (response.ok) {
         const data = await response.json()
+        
+        // Store token in localStorage as fallback for cookie issues
+        if (data.token) {
+          localStorage.setItem('auth-token', data.token)
+        }
+        
         setUser(data.user)
         return true
+      } else {
+        return false
       }
-      return false
     } catch (error) {
-      console.error('Login failed:', error)
+      console.error('Login network error:', error)
       return false
     }
   }
 
   const register = async (name: string, email: string, password: string): Promise<boolean> => {
     try {
+      const requestBody = { action: 'register', name, email, password }
+      
       const response = await fetch('/api/auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'register', name, email, password }),
+        body: JSON.stringify(requestBody),
         credentials: 'include',
       })
 
@@ -78,10 +97,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const data = await response.json()
         setUser(data.user)
         return true
+      } else {
+        return false
       }
-      return false
     } catch (error) {
-      console.error('Registration failed:', error)
+      console.error('Register network error:', error)
       return false
     }
   }

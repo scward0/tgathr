@@ -30,13 +30,6 @@ export function EventForm() {
 
   const eventType = watch('eventType');
 
-  // Add this debugging block:
-  const formData = watch();
-  const formErrors = errors;
-
-  console.log('Current form data:', formData);
-  console.log('Current form errors:', formErrors);
-  console.log('Event type:', eventType);
 
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -48,11 +41,19 @@ export function EventForm() {
     setError(null);
     
     try {
+      // Get token from localStorage for authentication
+      const token = localStorage.getItem('auth-token');
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch('/api/events', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify(data),
       });
   

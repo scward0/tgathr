@@ -3,9 +3,18 @@ import { cookies } from 'next/headers'
 import { prisma } from '@/lib/prisma'
 import { verifyToken } from '@/lib/auth'
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const token = cookies().get('auth-token')?.value
+    // Try to get token from cookie first
+    let token = cookies().get('session-id')?.value
+    
+    // If no cookie, try Authorization header as fallback
+    if (!token) {
+      const authHeader = request.headers.get('Authorization')
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        token = authHeader.substring(7)
+      }
+    }
     
     if (!token) {
       return NextResponse.json(

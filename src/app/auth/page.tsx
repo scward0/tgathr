@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 
@@ -14,10 +14,14 @@ export default function AuthPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const router = useRouter()
-  const { login, register } = useAuth()
+  const { login, register, checkAuth } = useAuth()
+
+  useEffect(() => {
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
     setError('')
     setLoading(true)
     
@@ -30,12 +34,16 @@ export default function AuthPage() {
       }
       
       if (success) {
-        router.push('/')
-        router.refresh()
+        // Instead of redirecting, trigger auth context to recheck
+        await checkAuth()
+        setTimeout(() => {
+          window.location.replace('/')
+        }, 100)
       } else {
         setError(isLogin ? 'Invalid credentials' : 'Registration failed')
       }
     } catch (err) {
+      console.error('Form submit error:', err)
       setError('Something went wrong')
     } finally {
       setLoading(false)

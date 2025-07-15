@@ -1,11 +1,6 @@
 import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
-
-    // Debug logging
-    console.log('DATABASE_URL exists:', !!process.env.DATABASE_URL);
-    console.log('NODE_ENV:', process.env.NODE_ENV);
-
   // During build time, just return a placeholder response
   if (!process.env.DATABASE_URL) {
     return NextResponse.json({ error: 'Database not available during build' }, { status: 503 });
@@ -18,6 +13,19 @@ export async function POST(request: Request) {
     const { randomUUID } = await import('crypto');
     const { prisma } = await import('@/lib/prisma');
     const { sendEventInvitation } = await import('@/lib/sms');
+    const { verifyToken } = await import('@/lib/auth');
+    
+    // Check authentication
+    const authHeader = request.headers.get('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    
+    const token = authHeader.substring(7);
+    const payload = verifyToken(token);
+    if (!payload) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    }
     
     // Parse and validate request body
     const body = await request.json();
@@ -47,8 +55,6 @@ export async function POST(request: Request) {
         )
       );
 
-      const creator = createdParticipants[0];
-
       const event = await tx.event.create({
         data: {
           name: validatedData.name,
@@ -64,7 +70,7 @@ export async function POST(request: Request) {
           finalEndDate: null,
           isFinalized: false,
           expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-          creatorId: creator.id,
+          creatorId: payload.userId, // Use authenticated user's ID
           participants: {
             connect: createdParticipants.map((p) => ({ id: p.id })),
           },
@@ -105,7 +111,7 @@ export async function POST(request: Request) {
       creator: {
         id: result.creator.id,
         name: result.creator.name,
-        token: result.creator.token,
+        email: result.creator.email,
       },
       participants: result.participants.map((p: any) => ({
         id: p.id,

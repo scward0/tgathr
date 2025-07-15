@@ -48,19 +48,18 @@ export async function POST(request: Request) {
       // Generate JWT token
       const token = signToken({ userId: user.id, email: user.email })
       
-      // Set cookie
-      cookies().set('auth-token', token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 60 * 60 * 24 * 7, // 1 week
-        domain: process.env.NODE_ENV === 'production' ? '.tgathr.app' : undefined,
+      // Create response with token for localStorage fallback
+      const response = NextResponse.json({
+        success: true,
+        user: { id: user.id, name: user.name, email: user.email },
+        token: token
       })
       
-      return NextResponse.json({
-        success: true,
-        user: { id: user.id, name: user.name, email: user.email }
-      })
+      // Set cookie using headers.append (response.cookies.set creates wrong header)
+      const cookieValue = `session-id=${token}; Path=/; Max-Age=604800; SameSite=Lax; ${process.env.NODE_ENV === 'production' ? 'Secure; ' : ''}HttpOnly`
+      response.headers.append('Set-Cookie', cookieValue)
+      
+      return response
     }
     
     if (action === 'login') {
@@ -90,19 +89,18 @@ export async function POST(request: Request) {
       // Generate JWT token
       const token = signToken({ userId: user.id, email: user.email })
       
-      // Set cookie
-      cookies().set('auth-token', token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 60 * 60 * 24 * 7, // 1 week
-        domain: process.env.NODE_ENV === 'production' ? '.tgathr.app' : undefined,
+      // Create response with token for localStorage fallback
+      const response = NextResponse.json({
+        success: true,
+        user: { id: user.id, name: user.name, email: user.email },
+        token: token
       })
       
-      return NextResponse.json({
-        success: true,
-        user: { id: user.id, name: user.name, email: user.email }
-      })
+      // Set cookie using headers.append (response.cookies.set creates wrong header)
+      const cookieValue = `session-id=${token}; Path=/; Max-Age=604800; SameSite=Lax; ${process.env.NODE_ENV === 'production' ? 'Secure; ' : ''}HttpOnly`
+      response.headers.append('Set-Cookie', cookieValue)
+      
+      return response
     }
     
     return NextResponse.json(
@@ -128,12 +126,14 @@ export async function POST(request: Request) {
 
 export async function DELETE() {
   // Logout
-  cookies().set('auth-token', '', {
+  const response = NextResponse.json({ success: true })
+  response.cookies.set('auth-token', '', {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    secure: false,
+    sameSite: 'lax',
+    path: '/',
     maxAge: 0,
   })
   
-  return NextResponse.json({ success: true })
+  return response
 }
