@@ -38,7 +38,7 @@ export async function POST(request: Request) {
     
     const validatedData = eventFormSchema.parse(processedBody);
 
-    // Start a transaction to ensure data consistency
+    // Start a transaction to ensure data consistency update
     const result = await prisma.$transaction(async (tx: any) => {
       // Your existing transaction logic here - keep it exactly the same
       const participantData = validatedData.participants.map((participant) => ({
