@@ -2,7 +2,9 @@
 
 import Link from 'next/link';
 import { useUser } from '@stackframe/stack';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
+
+export const dynamic = 'force-dynamic';
 
 interface UserEvent {
   id: string;
