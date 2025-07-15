@@ -52,8 +52,9 @@ export async function POST(request: Request) {
       cookies().set('auth-token', token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
+        sameSite: 'lax',
         maxAge: 60 * 60 * 24 * 7, // 1 week
+        domain: process.env.NODE_ENV === 'production' ? '.tgathr.app' : undefined,
       })
       
       return NextResponse.json({
@@ -93,8 +94,9 @@ export async function POST(request: Request) {
       cookies().set('auth-token', token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
+        sameSite: 'lax',
         maxAge: 60 * 60 * 24 * 7, // 1 week
+        domain: process.env.NODE_ENV === 'production' ? '.tgathr.app' : undefined,
       })
       
       return NextResponse.json({
