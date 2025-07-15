@@ -13,13 +13,15 @@ export async function GET(request: Request) {
     const { prisma } = await import('@/lib/prisma');
     const { verifyToken } = await import('@/lib/auth');
     
-    // Check authentication
-    const authHeader = request.headers.get('Authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    // Check authentication from cookies
+    const { cookies } = await import('next/headers');
+    const cookieStore = cookies();
+    const token = cookieStore.get('session-id')?.value;
+    
+    if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
-    const token = authHeader.substring(7);
     const payload = verifyToken(token);
     if (!payload) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });

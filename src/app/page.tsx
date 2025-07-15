@@ -32,15 +32,8 @@ export default function Home() {
   const fetchUserEvents = async () => {
     setEventsLoading(true);
     try {
-      const token = localStorage.getItem('auth-token');
-      const headers: Record<string, string> = {};
-      
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-
       const response = await fetch('/api/events/my-events', {
-        headers
+        credentials: 'include'
       });
 
       if (response.ok) {

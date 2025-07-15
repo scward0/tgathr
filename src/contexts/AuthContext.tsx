@@ -26,16 +26,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const checkAuth = async () => {
     try {
-      // Get token from localStorage as fallback
-      const token = localStorage.getItem('auth-token')
-      const headers: Record<string, string> = {}
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`
-      }
-      
       const response = await fetch('/api/auth/me', {
-        credentials: 'include',
-        headers
+        credentials: 'include'
       })
       
       if (response.ok) {
@@ -66,10 +58,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (response.ok) {
         const data = await response.json()
         
-        // Store token in localStorage as fallback for cookie issues
-        if (data.token) {
-          localStorage.setItem('auth-token', data.token)
-        }
         
         setUser(data.user)
         return true
@@ -95,6 +83,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (response.ok) {
         const data = await response.json()
+        
+        
         setUser(data.user)
         return true
       } else {

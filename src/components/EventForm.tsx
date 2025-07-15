@@ -41,19 +41,12 @@ export function EventForm() {
     setError(null);
     
     try {
-      // Get token from localStorage for authentication
-      const token = localStorage.getItem('auth-token');
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-      };
-      
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-
       const response = await fetch('/api/events', {
         method: 'POST',
-        headers,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include', // Include cookies in the request
         body: JSON.stringify(data),
       });
   
