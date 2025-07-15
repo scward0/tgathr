@@ -48,16 +48,21 @@ export async function POST(request: Request) {
       // Generate JWT token
       const token = signToken({ userId: user.id, email: user.email })
       
-      // Create response with token for localStorage fallback
+      // Create response
       const response = NextResponse.json({
         success: true,
         user: { id: user.id, name: user.name, email: user.email },
         token: token
       })
       
-      // Set cookie using headers.append (response.cookies.set creates wrong header)
-      const cookieValue = `session-id=${token}; Path=/; Max-Age=604800; SameSite=Lax; ${process.env.NODE_ENV === 'production' ? 'Secure; ' : ''}HttpOnly`
-      response.headers.append('Set-Cookie', cookieValue)
+      // Set cookie properly
+      response.cookies.set('session-id', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 604800, // 7 days
+      })
       
       return response
     }
@@ -89,16 +94,21 @@ export async function POST(request: Request) {
       // Generate JWT token
       const token = signToken({ userId: user.id, email: user.email })
       
-      // Create response with token for localStorage fallback
+      // Create response
       const response = NextResponse.json({
         success: true,
         user: { id: user.id, name: user.name, email: user.email },
         token: token
       })
       
-      // Set cookie using headers.append (response.cookies.set creates wrong header)
-      const cookieValue = `session-id=${token}; Path=/; Max-Age=604800; SameSite=Lax; ${process.env.NODE_ENV === 'production' ? 'Secure; ' : ''}HttpOnly`
-      response.headers.append('Set-Cookie', cookieValue)
+      // Set cookie properly
+      response.cookies.set('session-id', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 604800, // 7 days
+      })
       
       return response
     }
