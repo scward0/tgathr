@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { sendEventConfirmation } from '@/lib/email';
 
 interface RouteParams {
   params: {
@@ -18,7 +19,7 @@ export async function POST(request: Request, { params }: RouteParams) {
     const body = await request.json();
     console.log('Finalize request received:', body);
 
-    // Simple test - just mark as finalized for now
+    // Update the event with finalized dates
     const updatedEvent = await prisma.event.update({
       where: { id: params.id },
       data: {
@@ -26,9 +27,44 @@ export async function POST(request: Request, { params }: RouteParams) {
         finalEndDate: new Date(body.finalEndDate),
         isFinalized: true,
       },
+      include: {
+        participants: true,
+      },
     });
 
     console.log('📧 Event finalized:', updatedEvent.name);
+
+    // Send confirmation emails to all participants who have email addresses
+    const emailPromises = updatedEvent.participants
+      .filter(participant => participant.email) // Only send to participants with email
+      .map(participant => 
+        sendEventConfirmation(
+          participant.email!,
+          participant.name,
+          updatedEvent.name,
+          'Event Organizer', // You might want to fetch the actual creator name
+          updatedEvent.finalStartDate!,
+          updatedEvent.finalEndDate!,
+          `Your event "${updatedEvent.name}" has been finalized! Please save the date.`,
+          `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/events/${updatedEvent.id}`
+        )
+      );
+
+    // Wait for all emails to be sent
+    const emailResults = await Promise.allSettled(emailPromises);
+    
+    // Log email results
+    const successCount = emailResults.filter(result => result.status === 'fulfilled').length;
+    const totalEmails = emailResults.length;
+    
+    console.log(`📧 Sent ${successCount}/${totalEmails} confirmation emails`);
+    
+    // Log any email failures
+    emailResults.forEach((result, index) => {
+      if (result.status === 'rejected') {
+        console.error(`Failed to send email to participant ${index}:`, result.reason);
+      }
+    });
 
     return NextResponse.json({
       success: true,
@@ -37,6 +73,8 @@ export async function POST(request: Request, { params }: RouteParams) {
         name: updatedEvent.name,
         isFinalized: updatedEvent.isFinalized,
       },
+      emailsSent: successCount,
+      totalParticipants: updatedEvent.participants.length,
     });
 
   } catch (error) {
