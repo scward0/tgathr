@@ -12,7 +12,7 @@ export async function POST(request: Request) {
     const { z } = await import('zod');
     const { randomUUID } = await import('crypto');
     const { prisma } = await import('@/lib/prisma');
-    const { sendEventInvitation } = await import('@/lib/sms');
+    const { sendEventInvitation } = await import('@/lib/email');
     const { verifyToken } = await import('@/lib/auth');
     
     // Check authentication
@@ -44,6 +44,7 @@ export async function POST(request: Request) {
       const participantData = validatedData.participants.map((participant) => ({
         name: participant.name,
         phoneNumber: participant.phoneNumber,
+        email: participant.email,
         token: randomUUID(),
       }));
 
@@ -84,13 +85,13 @@ export async function POST(request: Request) {
       return event;
     });
 
-    // Send SMS invitations
+    // Send email invitations
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-    const smsResults = await Promise.all(
+    const emailResults = await Promise.all(
       result.participants.map(async (participant: any) => {
         const availabilityUrl = `${appUrl}/respond/${participant.token}`;
         return await sendEventInvitation(
-          participant.phoneNumber,
+          participant.email,
           participant.name,
           result.name,
           result.creator.name,
@@ -99,7 +100,7 @@ export async function POST(request: Request) {
       })
     );
 
-    console.log('SMS sending results:', smsResults);
+    console.log('Email sending results:', emailResults);
 
     return NextResponse.json({
       success: true,
@@ -107,7 +108,7 @@ export async function POST(request: Request) {
       name: result.name,
       description: result.description,
       eventType: result.eventType,
-      smsResults: smsResults,
+      emailResults: emailResults,
       creator: {
         id: result.creator.id,
         name: result.creator.name,

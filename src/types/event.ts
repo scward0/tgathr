@@ -26,7 +26,8 @@ export const eventFormSchema = z.object({
     z.object({
       name: z.string().min(1, 'Name is required'),
       phoneNumber: z.string()
-        .regex(/^\+?[1-9]\d{1,14}$/, 'Please enter a valid phone number')
+        .regex(/^\+?[1-9]\d{1,14}$/, 'Please enter a valid phone number'),
+      email: z.string().email('Please enter a valid email address')
     })
   ).min(1, 'At least one participant is required'),
 }).refine((data) => data.availabilityEndDate >= data.availabilityStartDate, {
