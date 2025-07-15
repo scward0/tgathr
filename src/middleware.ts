@@ -1,37 +1,48 @@
-// import { NextResponse } from 'next/server'
-// import type { NextRequest } from 'next/server'
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
+import { verifyToken } from '@/lib/auth'
 
-// const PASSWORD = 'alltogather'
-
-// export function middleware(request: NextRequest) {
-//   // Check if the user has already authenticated
-//   const isAuthenticated = request.cookies.get('auth')
+export function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl
   
-//   // If not authenticated and not on the auth page
-//   if (!isAuthenticated && !request.nextUrl.pathname.startsWith('/auth')) {
-//     // Redirect to auth page
-//     return NextResponse.redirect(new URL('/auth', request.url))
-//   }
+  // Skip middleware for auth pages and API routes
+  if (
+    pathname.startsWith('/auth') ||
+    pathname.startsWith('/api/auth') ||
+    pathname.startsWith('/_next') ||
+    pathname.includes('.') // static files
+  ) {
+    return NextResponse.next()
+  }
   
-//   return NextResponse.next()
-// }
+  // Check authentication for protected routes
+  const token = request.cookies.get('auth-token')?.value
+  
+  if (!token) {
+    return NextResponse.redirect(new URL('/auth', request.url))
+  }
+  
+  // Verify token
+  const payload = verifyToken(token)
+  if (!payload) {
+    // Clear invalid cookie and redirect
+    const response = NextResponse.redirect(new URL('/auth', request.url))
+    response.cookies.set('auth-token', '', { maxAge: 0 })
+    return response
+  }
+  
+  return NextResponse.next()
+}
 
-// // Configure which routes to protect
-// export const config = {
-//   matcher: [
-//     /*
-//      * Match all request paths except:
-//      * - /auth (authentication page)
-//      * - /api/auth (authentication API)
-//      * - /_next (Next.js internals)
-//      * - /favicon.ico, /sitemap.xml (static files)
-//      */
-//     '/((?!auth|api/auth|_next|favicon.ico|sitemap.xml).*)',
-//   ],
-// }
-
-// Dummy middleware to satisfy Next.js
-export function middleware() {
-  // Auth temporarily disabled
-  return;
+export const config = {
+  matcher: [
+    /*
+     * Match all request paths except:
+     * - /auth (authentication page)
+     * - /api/auth (authentication API)
+     * - /_next (Next.js internals)
+     * - Static files (containing dots)
+     */
+    '/((?!auth|api/auth|_next|.*\\.).*)',
+  ],
 } 
