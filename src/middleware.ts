@@ -50,11 +50,10 @@ export const config = {
      * Match all request paths except:
      * - /auth (authentication page)
      * - /api (all API routes)
-     * - /events (event pages - let React handle auth)
      * - /_next (Next.js internals)
      * - Static files (containing dots)
      * - / (home page - let React handle auth)
      */
-    '/((?!auth|api|events|_next|.*\\.|$).*)',
+    '/((?!auth|api|_next|.*\\.|$).*)',
   ],
 } 
