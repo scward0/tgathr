@@ -88,16 +88,18 @@ export async function POST(request: Request) {
     // Send email invitations
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
     const emailResults = await Promise.all(
-      result.participants.map(async (participant: any) => {
-        const availabilityUrl = `${appUrl}/respond/${participant.token}`;
-        return await sendEventInvitation(
-          participant.email,
-          participant.name,
-          result.name,
-          result.creator.name,
-          availabilityUrl
-        );
-      })
+      result.participants
+        .filter((participant: any) => participant.email) // Only send to participants with email
+        .map(async (participant: any) => {
+          const availabilityUrl = `${appUrl}/respond/${participant.token}`;
+          return await sendEventInvitation(
+            participant.email,
+            participant.name,
+            result.name,
+            result.creator.name,
+            availabilityUrl
+          );
+        })
     );
 
     console.log('Email sending results:', emailResults);

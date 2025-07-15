@@ -70,7 +70,7 @@ model Participant {
   id          String   @id @default(cuid())
   name        String
   phoneNumber String
-  email       String   // Add email field for email invitations
+  email       String?  // Optional email field for email invitations
   token       String   @unique // For secure access to availability form
   
   createdAt DateTime @default(now())
