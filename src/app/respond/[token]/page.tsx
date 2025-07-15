@@ -67,7 +67,7 @@ export default function ResponsePage({ params }: ResponsePageProps) {
             {event.name}
           </h1>
           <p className="text-gray-300">
-            Organized by {event.creator.name}
+            Event ID: {event.id}
           </p>
           {event.description && (
             <p className="text-gray-400 mt-2">{event.description}</p>

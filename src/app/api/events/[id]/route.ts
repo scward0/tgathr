@@ -20,7 +20,6 @@ export async function GET(request: Request, { params }: RouteParams) {
     const event = await prisma.event.findUnique({
       where: { id: params.id },
       include: {
-        creator: true,
         participants: {
           include: {
             timeSlots: {
@@ -109,7 +108,7 @@ export async function GET(request: Request, { params }: RouteParams) {
         isFinalized: event.isFinalized,
         finalStartDate: event.finalStartDate,
         finalEndDate: event.finalEndDate,
-        creator: event.creator,
+        creatorId: event.creatorId,
       },
       participants: event.participants.map((p: { 
         id: string; 

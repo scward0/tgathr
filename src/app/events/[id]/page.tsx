@@ -105,7 +105,7 @@ export default function EventDashboard({ params }: DashboardPageProps) {
                 )}
               </h1>
               <p className="text-gray-400">
-                Organized by {event.creator.name} • {event.eventType === 'single-day' ? 'Single Day Event' : 'Multi-Day Event'}
+                {event.eventType === 'single-day' ? 'Single Day Event' : 'Multi-Day Event'}
               </p>
             </div>
             <div className="text-right">

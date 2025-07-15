@@ -18,11 +18,7 @@ export async function GET(request: Request, { params }: RouteParams) {
     const participant = await prisma.participant.findUnique({
       where: { token: params.token },
       include: {
-        events: {
-          include: {
-            creator: true,
-          },
-        },
+        events: true,
       },
     });
 
@@ -53,7 +49,7 @@ export async function GET(request: Request, { params }: RouteParams) {
         duration: event.duration,
         eventLength: event.eventLength,
         timingPreference: event.timingPreference,
-        creator: event.creator,
+        creatorId: event.creatorId,
       },
     });
 
