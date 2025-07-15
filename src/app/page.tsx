@@ -23,8 +23,12 @@ export default function Home() {
   const user = useUser();
   const [events, setEvents] = useState<UserEvent[]>([]);
   const [eventsLoading, setEventsLoading] = useState(false);
+  const [debugInfo, setDebugInfo] = useState('Initializing...');
 
   useEffect(() => {
+    console.log('User state changed:', user);
+    setDebugInfo(`User state: ${user ? 'authenticated' : 'not authenticated'}`);
+    
     if (user) {
       fetchUserEvents();
     }
@@ -48,15 +52,20 @@ export default function Home() {
     }
   };
 
-  if (!user) {
+  // Show debug info and handle loading states
+  if (user === undefined) {
     return (
-      <main className="min-h-screen flex items-center justify-center bg-gray-900">
-        <div className="text-white">Loading...</div>
+      <main className="min-h-screen flex flex-col items-center justify-center bg-gray-900">
+        <div className="text-white mb-4">Loading...</div>
+        <div className="text-gray-400 text-sm">{debugInfo}</div>
+        <div className="text-gray-500 text-xs mt-2">
+          Check console for more details
+        </div>
       </main>
     );
   }
 
-  if (!user) {
+  if (user === null) {
     // Not logged in - show landing page
     return (
       <main className="min-h-screen flex flex-col items-center justify-center bg-gray-900">
