@@ -18,7 +18,7 @@ export function EventForm() {
   } = useForm<EventFormData>({
     resolver: zodResolver(eventFormSchema),
     defaultValues: {
-      participants: [{ name: '', phoneNumber: '', email: '' }],
+      participants: [{ name: '', email: '' }],
       eventType: 'single-day',
     },
   });
@@ -282,7 +282,7 @@ export function EventForm() {
           </label>
           <button
             type="button"
-            onClick={() => append({ name: '', phoneNumber: '', email: '' })}
+            onClick={() => append({ name: '', email: '' })}
             className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-blue-400 hover:text-blue-300 transition-colors"
           >
             + Add Participant
@@ -305,7 +305,7 @@ export function EventForm() {
                 )}
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
                   <input
                     {...register(`participants.${index}.name`)}
@@ -330,20 +330,6 @@ export function EventForm() {
                   {errors.participants?.[index]?.email && (
                     <p className="text-sm text-red-400 mt-1">
                       {errors.participants[index]?.email?.message}
-                    </p>
-                  )}
-                </div>
-                
-                <div>
-                  <input
-                    {...register(`participants.${index}.phoneNumber`)}
-                    type="tel"
-                    placeholder="+1234567890"
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                  />
-                  {errors.participants?.[index]?.phoneNumber && (
-                    <p className="text-sm text-red-400 mt-1">
-                      {errors.participants[index]?.phoneNumber?.message}
                     </p>
                   )}
                 </div>

@@ -25,8 +25,7 @@ export const eventFormSchema = z.object({
   participants: z.array(
     z.object({
       name: z.string().min(1, 'Name is required'),
-      phoneNumber: z.string()
-        .regex(/^\+?[1-9]\d{1,14}$/, 'Please enter a valid phone number'),
+      phoneNumber: z.string().optional(),
       email: z.string().email('Please enter a valid email address')
     })
   ).min(1, 'At least one participant is required'),

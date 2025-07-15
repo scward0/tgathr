@@ -43,7 +43,7 @@ export async function POST(request: Request) {
       // Your existing transaction logic here - keep it exactly the same
       const participantData = validatedData.participants.map((participant) => ({
         name: participant.name,
-        phoneNumber: participant.phoneNumber,
+        phoneNumber: participant.phoneNumber || '',
         email: participant.email,
         token: randomUUID(),
       }));
