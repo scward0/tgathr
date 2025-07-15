@@ -15,6 +15,8 @@ interface UserEvent {
   availabilityEndDate: string;
   isFinalized: boolean;
   participantCount: number;
+  respondedParticipants: number;
+  allResponded: boolean;
   createdAt: string;
   expiresAt: string;
 }
@@ -28,6 +30,10 @@ export default function Home() {
 
   useEffect(() => {
     console.log('User state changed:', user);
+    console.log('User properties:', user ? Object.keys(user) : 'No user');
+    console.log('User displayName:', user?.displayName);
+    console.log('User primaryEmail:', user?.primaryEmail);
+    console.log('User id:', user?.id);
     setDebugInfo(`User state: ${user ? 'authenticated' : 'not authenticated'}`);
     
     if (user) {
@@ -115,7 +121,7 @@ export default function Home() {
       <nav className="flex justify-between items-center p-6 border-b border-gray-800">
         <h1 className="text-2xl font-bold text-white">tgathr</h1>
         <div className="flex items-center space-x-4">
-          <span className="text-gray-300">Welcome, {user?.displayName}!</span>
+          <span className="text-gray-300">Welcome, {user?.displayName || user?.primaryEmail || 'User'}!</span>
           <button
             onClick={() => user.signOut()}
             className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
@@ -127,7 +133,7 @@ export default function Home() {
       
       <div className="max-w-6xl mx-auto px-6 py-8">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-white mb-4">Welcome, {user?.displayName}!</h2>
+          <h2 className="text-3xl font-bold text-white mb-4">Welcome, {user?.displayName || user?.primaryEmail || 'User'}!</h2>
           <p className="text-gray-300 mb-8">Ready to organize your next event?</p>
           <Link 
             href="/events/new"
@@ -176,14 +182,21 @@ export default function Home() {
                       <span className={`px-2 py-1 rounded ${event.eventType === 'single-day' ? 'bg-green-900 text-green-300' : 'bg-blue-900 text-blue-300'}`}>
                         {event.eventType}
                       </span>
-                      <span className={`px-2 py-1 rounded ${event.isFinalized ? 'bg-purple-900 text-purple-300' : 'bg-yellow-900 text-yellow-300'}`}>
-                        {event.isFinalized ? 'Finalized' : 'Collecting responses'}
+                      <span className={`px-2 py-1 rounded ${
+                        event.isFinalized 
+                          ? 'bg-purple-900 text-purple-300' 
+                          : event.allResponded 
+                            ? 'bg-green-900 text-green-300' 
+                            : 'bg-yellow-900 text-yellow-300'
+                      }`}>
+                        {event.isFinalized ? 'Finalized' : event.allResponded ? 'Ready to finalize' : 'Collecting responses'}
                       </span>
                     </div>
                   </div>
                   
                   <div className="text-sm text-gray-400 space-y-1 mb-4">
                     <div>Participants: {event.participantCount}</div>
+                    <div>Responses: {event.respondedParticipants}/{event.participantCount}</div>
                     <div>Created: {new Date(event.createdAt).toLocaleDateString()}</div>
                     <div>Expires: {new Date(event.expiresAt).toLocaleDateString()}</div>
                   </div>

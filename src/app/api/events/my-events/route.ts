@@ -25,7 +25,11 @@ export async function GET(request: Request) {
         creatorId: user.id
       },
       include: {
-        participants: true,
+        participants: {
+          include: {
+            timeSlots: true
+          }
+        },
         _count: {
           select: { participants: true }
         }
@@ -37,18 +41,26 @@ export async function GET(request: Request) {
 
     return NextResponse.json({
       success: true,
-      events: events.map(event => ({
-        id: event.id,
-        name: event.name,
-        description: event.description,
-        eventType: event.eventType,
-        availabilityStartDate: event.availabilityStartDate,
-        availabilityEndDate: event.availabilityEndDate,
-        isFinalized: event.isFinalized,
-        participantCount: event._count.participants,
-        createdAt: event.createdAt,
-        expiresAt: event.expiresAt
-      }))
+      events: events.map(event => {
+        const totalParticipants = event._count.participants;
+        const respondedParticipants = event.participants.filter(p => p.timeSlots.length > 0).length;
+        const allResponded = totalParticipants > 0 && respondedParticipants === totalParticipants;
+        
+        return {
+          id: event.id,
+          name: event.name,
+          description: event.description,
+          eventType: event.eventType,
+          availabilityStartDate: event.availabilityStartDate,
+          availabilityEndDate: event.availabilityEndDate,
+          isFinalized: event.isFinalized,
+          participantCount: event._count.participants,
+          respondedParticipants,
+          allResponded,
+          createdAt: event.createdAt,
+          expiresAt: event.expiresAt
+        };
+      })
     });
 
   } catch (error) {
