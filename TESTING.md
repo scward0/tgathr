@@ -89,13 +89,13 @@ npx prisma db push --schema=./prisma/schema.test.prisma --force-reset
 - Tests edge cases and error handling
 
 Key test scenarios:
-- ✅ Optimal time finding for all participant availability
-- ✅ Handling overlapping availability windows
-- ✅ Preferred time filtering and scoring
-- ✅ Multi-day event period evaluation
-- ✅ Duration parsing and validation
-- ✅ Score calculation with bonuses (weekends, round hours)
-- ✅ Edge cases (empty participants, no availability)
+- Optimal time finding for all participant availability
+- Handling overlapping availability windows
+- Preferred time filtering and scoring
+- Multi-day event period evaluation
+- Duration parsing and validation
+- Score calculation with bonuses (weekends, round hours)
+- Edge cases (empty participants, no availability)
 
 ### 2. Schema Validation Tests (`src/types/__tests__/`)
 
@@ -105,13 +105,13 @@ Key test scenarios:
 - Validates participant data and constraints
 
 Key test scenarios:
-- ✅ Valid single-day and multi-day event validation
-- ✅ Name length constraints (3-100 characters)
-- ✅ Description length limits (500 characters)
-- ✅ Date validation (end date after start date)
-- ✅ Event type specific field requirements
-- ✅ Participant validation (name, email format)
-- ✅ Schema refinement logic
+- Valid single-day and multi-day event validation
+- Name length constraints (3-100 characters)
+- Description length limits (500 characters)
+- Date validation (end date after start date)
+- Event type specific field requirements
+- Participant validation (name, email format)
+- Schema refinement logic
 
 ### 3. API Integration Tests (`src/app/api/__tests__/`)
 
@@ -121,23 +121,23 @@ Key test scenarios:
 - Tests email invitation sending
 
 Key test scenarios:
-- ✅ Successful single-day and multi-day event creation
-- ✅ Authentication validation (401 responses)
-- ✅ Request validation (400 responses)
-- ✅ Database transaction integrity
-- ✅ Email service integration
-- ✅ Error handling (validation, database errors)
+- Successful single-day and multi-day event creation
+- Authentication validation (401 responses)
+- Request validation (400 responses)
+- Database transaction integrity
+- Email service integration
+- Error handling (validation, database errors)
 
 **Availability Submission API (`availability.test.ts`)**
 - Tests the POST `/api/availability` endpoint
 - Validates participant token verification and time slot storage
 
 Key test scenarios:
-- ✅ Successful availability submission
-- ✅ Time slot replacement for resubmissions
-- ✅ Participant token validation
-- ✅ Date parsing and storage
-- ✅ Error handling for invalid data
+- Successful availability submission
+- Time slot replacement for resubmissions
+- Participant token validation
+- Date parsing and storage
+- Error handling for invalid data
 
 ### 4. Component Tests (`src/components/__tests__/`)
 
@@ -147,13 +147,13 @@ Key test scenarios:
 - Tests conditional field rendering and validation
 
 Key test scenarios:
-- ✅ Form rendering with required fields
-- ✅ Conditional field display (single-day vs multi-day)
-- ✅ Participant management (add/remove)
-- ✅ Form validation and error display
-- ✅ Successful form submission
-- ✅ API error handling
-- ✅ Loading states
+- Form rendering with required fields
+- Conditional field display (single-day vs multi-day)
+- Participant management (add/remove)
+- Form validation and error display
+- Successful form submission
+- API error handling
+- Loading states
 
 ### 5. End-to-End Tests (`e2e/`)
 
@@ -163,13 +163,13 @@ Key test scenarios:
 - Tests mobile responsiveness
 
 Key test scenarios:
-- ✅ Complete single-day event creation
-- ✅ Complete multi-day event creation
-- ✅ Form validation and error handling
-- ✅ Conditional field behavior
-- ✅ Participant management
-- ✅ Mobile responsiveness
-- ✅ Availability response workflow
+- Complete single-day event creation
+- Complete multi-day event creation
+- Form validation and error handling
+- Conditional field behavior
+- Participant management
+- Mobile responsiveness
+- Availability response workflow
 
 ## Coverage Configuration
 
