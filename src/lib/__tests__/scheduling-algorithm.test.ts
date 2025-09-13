@@ -289,7 +289,7 @@ describe('SchedulingAlgorithm', () => {
     it('should parse duration strings correctly', () => {
       const event = createMockEvent()
       const participants = [createMockParticipant()]
-      const algorithm = new SchedulingAlgorithm(event, participants)
+      const _algorithm = new SchedulingAlgorithm(event, participants)
 
       // Test duration parsing through recommendations
       const testCases = [

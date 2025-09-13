@@ -32,7 +32,7 @@ export function EventForm() {
 
 
   const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
+  const [_error, setError] = useState<string | null>(null);
 
   const onSubmit = async (data: EventFormData) => {
     console.log('Form data being submitted:', data); // Add this line

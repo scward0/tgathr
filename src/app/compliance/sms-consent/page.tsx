@@ -53,7 +53,7 @@ export default function SMSConsentPage() {
           Users can opt out of receiving SMS messages at any time by:
         </p>
         <ul className="list-disc pl-6 mb-4">
-          <li>Replying "STOP" to any SMS message</li>
+          <li>Replying &quot;STOP&quot; to any SMS message</li>
           <li>Contacting the event creator to remove them from the event</li>
         </ul>
       </section>

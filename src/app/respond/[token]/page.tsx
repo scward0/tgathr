@@ -119,7 +119,7 @@ export default function ResponsePage({ params }: ResponsePageProps) {
             Hi {participant.name}! 👋
           </h2>
           <p className="text-blue-100">
-            Please submit your availability below. We'll find the best time that works for everyone!
+            Please submit your availability below. We&apos;ll find the best time that works for everyone!
           </p>
         </div>
 

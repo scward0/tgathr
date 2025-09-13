@@ -207,7 +207,7 @@ describe('/api/availability POST', () => {
     const mockRequest = createMockRequest(invalidRequestBody)
 
     const response = await availabilityPost(mockRequest)
-    const responseData = await response.json()
+    const _responseData = await response.json()
 
     expect(response.status).toBe(200) // Empty array is actually valid
     

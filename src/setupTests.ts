@@ -40,7 +40,7 @@ try {
       },
     },
   }))
-} catch (error) {
+} catch (_error) {
   // Prisma module doesn't exist yet, skip mocking
 }
 
@@ -56,14 +56,16 @@ process.env = {
 
 // Global test utilities
 declare global {
-  var mockDate: (date: string) => void
-  var restoreDate: () => void
+  namespace globalThis {
+    const mockDate: (date: string) => void
+    const restoreDate: () => void
+  }
 }
 
-global.mockDate = (date: string) => {
+(global as any).mockDate = (date: string) => {
   jest.spyOn(global.Date, 'now').mockImplementation(() => new Date(date).getTime())
 }
 
-global.restoreDate = () => {
+(global as any).restoreDate = () => {
   jest.spyOn(global.Date, 'now').mockRestore()
 }

@@ -1,5 +1,7 @@
 import { POST as eventsPost } from '../events/route'
 import { TestDatabaseManager } from '@/lib/test-setup'
+import { stackServerApp } from '@/lib/stack'
+import { sendEventInvitation } from '@/lib/email'
 
 // Mock Neon Auth
 const mockUser = {
@@ -8,15 +10,22 @@ const mockUser = {
   primaryEmail: 'test@example.com'
 }
 
+const mockStackServerApp = {
+  getUser: jest.fn() as jest.MockedFunction<any>
+}
+
+const mockSendEventInvitation = jest.fn(() => Promise.resolve({ success: true, messageId: 'test-message-id' }))
+
+// Set default mock behavior
+mockStackServerApp.getUser.mockResolvedValue(mockUser)
+
 jest.mock('@/lib/stack', () => ({
-  stackServerApp: {
-    getUser: jest.fn(() => Promise.resolve(mockUser))
-  }
+  stackServerApp: mockStackServerApp
 }))
 
 // Mock email service
 jest.mock('@/lib/email', () => ({
-  sendEventInvitation: jest.fn(() => Promise.resolve({ success: true, messageId: 'test-message-id' }))
+  sendEventInvitation: mockSendEventInvitation
 }))
 
 describe('/api/events POST', () => {
@@ -120,8 +129,7 @@ describe('/api/events POST', () => {
 
   it('should return 401 when user is not authenticated', async () => {
     // Mock unauthorized user
-    const { stackServerApp } = require('@/lib/stack')
-    stackServerApp.getUser.mockResolvedValueOnce(null)
+    mockStackServerApp.getUser.mockResolvedValueOnce(null)
 
     const requestBody = createValidRequest()
     const mockRequest = createMockRequest(requestBody)
@@ -133,7 +141,7 @@ describe('/api/events POST', () => {
     expect(responseData).toEqual({ error: 'Unauthorized' })
 
     // Restore mock
-    stackServerApp.getUser.mockResolvedValue(mockUser)
+    mockStackServerApp.getUser.mockResolvedValue(mockUser)
   })
 
   it('should return 400 for invalid event data', async () => {
@@ -291,8 +299,7 @@ describe('/api/events POST', () => {
   })
 
   it('should call email service for participants with email addresses', async () => {
-    const { sendEventInvitation } = require('@/lib/email')
-    sendEventInvitation.mockClear()
+    mockSendEventInvitation.mockClear()
 
     const requestBody = createValidRequest()
     const mockRequest = createMockRequest(requestBody)
@@ -320,8 +327,7 @@ describe('/api/events POST', () => {
   })
 
   it('should skip email sending for participants without email addresses', async () => {
-    const { sendEventInvitation } = require('@/lib/email')
-    sendEventInvitation.mockClear()
+    mockSendEventInvitation.mockClear()
 
     const requestBody = createValidRequest({
       participants: [

@@ -1,12 +1,11 @@
-import { 
-    format, 
-    addMinutes, 
-    eachDayOfInterval, 
+import {
+    format,
+    addMinutes,
+    eachDayOfInterval,
     isWithinInterval,
-    parseISO,
     startOfDay,
     endOfDay,
-    isSameDay 
+    isSameDay
   } from 'date-fns';
   
   interface TimeSlot {
@@ -85,7 +84,9 @@ import {
         // Get all availability for this day
         const dayAvailability = this.getAvailabilityForDay(day);
         
-        if (dayAvailability.length === 0) continue;
+        if (dayAvailability.length === 0) {
+          continue;
+        }
   
         // Find optimal time slots for this day
         const dayRecommendations = this.findOptimalTimeSlotsForDay(
@@ -273,12 +274,12 @@ import {
       endDay: Date, 
       periodAvailability: Map<string, TimeSlot[]>
     ): RecommendedTime | null {
-      let totalAvailableParticipants = 0;
+      const _totalAvailableParticipants = 0;
       let availableDays = 0;
       const participantAvailability = new Set<string>();
-      
+
       // Count how many participants are available for how many days
-      for (const [dayKey, dayAvailability] of periodAvailability) {
+      for (const [_dayKey, dayAvailability] of periodAvailability) {
         if (dayAvailability.length > 0) {
           availableDays++;
           dayAvailability.forEach(slot => {
@@ -396,7 +397,9 @@ import {
      * Helper methods
      */
     private parseDuration(duration?: string): number {
-      if (!duration) return 120; // Default 2 hours
+      if (!duration) {
+        return 120; // Default 2 hours
+      }
       
       const durationMap: { [key: string]: number } = {
         '1-hour': 60,
@@ -410,7 +413,9 @@ import {
     }
     
     private parseEventLength(eventLength?: string): number {
-      if (!eventLength) return 2;
+      if (!eventLength) {
+        return 2;
+      }
       
       const lengthMap: { [key: string]: number } = {
         '2-days': 2,
@@ -443,7 +448,9 @@ import {
       const seen = new Set<string>();
       return windows.filter(window => {
         const key = `${window.startTime.getTime()}-${window.participantCount}`;
-        if (seen.has(key)) return false;
+        if (seen.has(key)) {
+          return false;
+        }
         seen.add(key);
         return true;
       });

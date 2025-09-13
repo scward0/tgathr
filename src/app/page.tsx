@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useUser } from '@stackframe/stack';
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useState } from 'react';
 
 export const dynamic = 'force-dynamic';
 
@@ -161,7 +161,7 @@ export default function Home() {
             </div>
           ) : events.length === 0 ? (
             <div className="text-center py-12 bg-gray-800 rounded-lg">
-              <p className="text-gray-400 mb-4">You haven't created any events yet.</p>
+              <p className="text-gray-400 mb-4">You haven&apos;t created any events yet.</p>
               <Link 
                 href="/events/new"
                 className="text-blue-400 hover:text-blue-300"

@@ -3,7 +3,7 @@ import { stackServerApp } from '@/lib/stack';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(request: Request) {
+export async function GET(_request: Request) {
   // During build time, just return a placeholder response
   if (!process.env.DATABASE_URL) {
     return NextResponse.json({ error: 'Database not available during build' }, { status: 503 });

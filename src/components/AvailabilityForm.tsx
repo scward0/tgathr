@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { format, addDays, eachDayOfInterval, isSameDay } from 'date-fns';
+import { format, eachDayOfInterval } from 'date-fns';
 
 interface AvailabilityFormProps {
   event: {
@@ -157,7 +157,7 @@ const isSlotSelected = (date: Date, timeSlot: string) => {
           Availability Submitted!
         </h3>
         <p className="text-green-100">
-          Thanks {participant.name}! We'll let you know once everyone responds and the organizer picks the best time.
+          Thanks {participant.name}! We&apos;ll let you know once everyone responds and the organizer picks the best time.
         </p>
       </div>
     );
@@ -170,7 +170,7 @@ const isSlotSelected = (date: Date, timeSlot: string) => {
           Select Your Available Times
         </h3>
         <p className="text-gray-400 text-sm">
-          Click the times when you're available. You can select multiple options.
+          Click the times when you&apos;re available. You can select multiple options.
         </p>
       </div>
 
