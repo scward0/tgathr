@@ -55,7 +55,12 @@ process.env = {
 }
 
 // Global test utilities
-global.mockDate = (date) => {
+declare global {
+  var mockDate: (date: string) => void
+  var restoreDate: () => void
+}
+
+global.mockDate = (date: string) => {
   jest.spyOn(global.Date, 'now').mockImplementation(() => new Date(date).getTime())
 }
 
