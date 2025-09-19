@@ -18,7 +18,7 @@ export function EventForm() {
   } = useForm<EventFormData>({
     resolver: zodResolver(eventFormSchema),
     defaultValues: {
-      participants: [{ name: '', email: '' }],
+      participants: [{ name: '', email: '', phoneNumber: '' }],
       eventType: 'single-day',
     },
   });
@@ -107,10 +107,10 @@ export function EventForm() {
       </div>
 
       {/* Event Type Selection */}
-      <div className="space-y-3">
-        <label className="block text-sm font-medium text-gray-300">
+      <fieldset className="space-y-3">
+        <legend className="block text-sm font-medium text-gray-300">
           Event Type
-        </label>
+        </legend>
         <div className="space-y-2">
           <label className="flex items-center space-x-3 cursor-pointer">
             <input
@@ -134,7 +134,7 @@ export function EventForm() {
         {errors.eventType && (
           <p className="text-sm text-red-400">{errors.eventType.message}</p>
         )}
-      </div>
+      </fieldset>
 
       {/* Availability Window */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -275,7 +275,7 @@ export function EventForm() {
           </label>
           <button
             type="button"
-            onClick={() => append({ name: '', email: '' })}
+            onClick={() => append({ name: '', email: '', phoneNumber: '' })}
             className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-blue-400 hover:text-blue-300 transition-colors"
           >
             + Add Participant
@@ -298,10 +298,14 @@ export function EventForm() {
                 )}
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div>
+                  <label htmlFor={`participant-${index}-name`} className="sr-only">
+                    Participant {index + 1} Name
+                  </label>
                   <input
                     {...register(`participants.${index}.name`)}
+                    id={`participant-${index}-name`}
                     type="text"
                     placeholder="Name"
                     className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
@@ -312,10 +316,14 @@ export function EventForm() {
                     </p>
                   )}
                 </div>
-                
+
                 <div>
+                  <label htmlFor={`participant-${index}-email`} className="sr-only">
+                    Participant {index + 1} Email
+                  </label>
                   <input
                     {...register(`participants.${index}.email`)}
+                    id={`participant-${index}-email`}
                     type="email"
                     placeholder="email@example.com"
                     className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
@@ -323,6 +331,24 @@ export function EventForm() {
                   {errors.participants?.[index]?.email && (
                     <p className="text-sm text-red-400 mt-1">
                       {errors.participants[index]?.email?.message}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label htmlFor={`participant-${index}-phone`} className="sr-only">
+                    Participant {index + 1} Phone
+                  </label>
+                  <input
+                    {...register(`participants.${index}.phoneNumber`)}
+                    id={`participant-${index}-phone`}
+                    type="tel"
+                    placeholder="Phone (optional)"
+                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  />
+                  {errors.participants?.[index]?.phoneNumber && (
+                    <p className="text-sm text-red-400 mt-1">
+                      {errors.participants[index]?.phoneNumber?.message}
                     </p>
                   )}
                 </div>

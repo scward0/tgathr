@@ -11,10 +11,10 @@ export const eventFormSchema = z.object({
     required_error: 'Please select an event type',
   }),
   availabilityStartDate: z.date({
-    required_error: 'Availability start date is required',
+    required_error: 'Availability window start is required',
   }),
   availabilityEndDate: z.date({
-    required_error: 'Availability end date is required',
+    required_error: 'Availability window end is required',
   }),
   // Single day event fields - allow empty strings and transform
   preferredTime: z.string().optional().or(z.literal('')),

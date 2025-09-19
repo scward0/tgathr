@@ -34,9 +34,11 @@ describe('EventForm', () => {
     render(<EventForm />)
 
     expect(screen.getByLabelText(/event name/i)).toBeInTheDocument()
-    expect(screen.getByLabelText(/event type/i)).toBeInTheDocument()
-    expect(screen.getByLabelText(/availability start date/i)).toBeInTheDocument()
-    expect(screen.getByLabelText(/availability end date/i)).toBeInTheDocument()
+    expect(screen.getByText(/event type/i)).toBeInTheDocument()
+    expect(screen.getByDisplayValue('single-day')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('multi-day')).toBeInTheDocument()
+    expect(screen.getByLabelText(/availability window start/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/availability window end/i)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /create event/i })).toBeInTheDocument()
   })
 
@@ -99,7 +101,7 @@ describe('EventForm', () => {
 
     await waitFor(() => {
       expect(screen.getByText(/event name must be at least 3 characters/i)).toBeInTheDocument()
-      expect(screen.getByText(/availability start date is required/i)).toBeInTheDocument()
+      expect(screen.getByText(/availability window start is required/i)).toBeInTheDocument()
       expect(screen.getByText(/name is required/i)).toBeInTheDocument()
     })
   })
@@ -121,8 +123,8 @@ describe('EventForm', () => {
 
     // Fill in basic required fields but leave single-day fields empty
     await user.type(screen.getByLabelText(/event name/i), 'Test Event')
-    await user.type(screen.getByLabelText(/availability start date/i), '2024-01-15')
-    await user.type(screen.getByLabelText(/availability end date/i), '2024-01-20')
+    await user.type(screen.getByLabelText(/availability window start/i), '2024-01-15')
+    await user.type(screen.getByLabelText(/availability window end/i), '2024-01-20')
     await user.type(screen.getByLabelText(/participant 1 name/i), 'Test User')
     await user.type(screen.getByLabelText(/participant 1 email/i), 'test@example.com')
 
@@ -141,8 +143,8 @@ describe('EventForm', () => {
 
     // Fill in basic required fields but leave multi-day fields empty
     await user.type(screen.getByLabelText(/event name/i), 'Test Event')
-    await user.type(screen.getByLabelText(/availability start date/i), '2024-01-15')
-    await user.type(screen.getByLabelText(/availability end date/i), '2024-01-20')
+    await user.type(screen.getByLabelText(/availability window start/i), '2024-01-15')
+    await user.type(screen.getByLabelText(/availability window end/i), '2024-01-20')
     await user.type(screen.getByLabelText(/participant 1 name/i), 'Test User')
     await user.type(screen.getByLabelText(/participant 1 email/i), 'test@example.com')
 
@@ -159,8 +161,8 @@ describe('EventForm', () => {
     // Fill in all required fields for single-day event
     await user.type(screen.getByLabelText(/event name/i), 'Team Meeting')
     await user.type(screen.getByLabelText(/description/i), 'Weekly team sync')
-    await user.type(screen.getByLabelText(/availability start date/i), '2024-01-15')
-    await user.type(screen.getByLabelText(/availability end date/i), '2024-01-20')
+    await user.type(screen.getByLabelText(/availability window start/i), '2024-01-15')
+    await user.type(screen.getByLabelText(/availability window end/i), '2024-01-20')
     await user.selectOptions(screen.getByLabelText(/preferred time/i), 'morning')
     await user.selectOptions(screen.getByLabelText(/duration/i), '2-hours')
     await user.type(screen.getByLabelText(/participant 1 name/i), 'John Doe')
@@ -208,8 +210,8 @@ describe('EventForm', () => {
 
     // Fill in all required fields for multi-day event
     await user.type(screen.getByLabelText(/event name/i), 'Team Retreat')
-    await user.type(screen.getByLabelText(/availability start date/i), '2024-01-15')
-    await user.type(screen.getByLabelText(/availability end date/i), '2024-01-30')
+    await user.type(screen.getByLabelText(/availability window start/i), '2024-01-15')
+    await user.type(screen.getByLabelText(/availability window end/i), '2024-01-30')
     await user.selectOptions(screen.getByLabelText(/event length/i), '3-days')
     await user.selectOptions(screen.getByLabelText(/timing preference/i), 'weekends-only')
     await user.type(screen.getByLabelText(/participant 1 name/i), 'Jane Smith')
@@ -258,8 +260,8 @@ describe('EventForm', () => {
 
     // Fill in minimal valid data
     await user.type(screen.getByLabelText(/event name/i), 'Test Event')
-    await user.type(screen.getByLabelText(/availability start date/i), '2024-01-15')
-    await user.type(screen.getByLabelText(/availability end date/i), '2024-01-20')
+    await user.type(screen.getByLabelText(/availability window start/i), '2024-01-15')
+    await user.type(screen.getByLabelText(/availability window end/i), '2024-01-20')
     await user.selectOptions(screen.getByLabelText(/preferred time/i), 'morning')
     await user.selectOptions(screen.getByLabelText(/duration/i), '2-hours')
     await user.type(screen.getByLabelText(/participant 1 name/i), 'Test User')
@@ -288,8 +290,8 @@ describe('EventForm', () => {
 
     // Fill in minimal valid data
     await user.type(screen.getByLabelText(/event name/i), 'Test Event')
-    await user.type(screen.getByLabelText(/availability start date/i), '2024-01-15')
-    await user.type(screen.getByLabelText(/availability end date/i), '2024-01-20')
+    await user.type(screen.getByLabelText(/availability window start/i), '2024-01-15')
+    await user.type(screen.getByLabelText(/availability window end/i), '2024-01-20')
     await user.selectOptions(screen.getByLabelText(/preferred time/i), 'morning')
     await user.selectOptions(screen.getByLabelText(/duration/i), '2-hours')
     await user.type(screen.getByLabelText(/participant 1 name/i), 'Test User')
@@ -317,8 +319,8 @@ describe('EventForm', () => {
 
     // Fill other required fields
     await user.type(screen.getByLabelText(/event name/i), 'Test Event')
-    await user.type(screen.getByLabelText(/availability start date/i), '2024-01-15')
-    await user.type(screen.getByLabelText(/availability end date/i), '2024-01-20')
+    await user.type(screen.getByLabelText(/availability window start/i), '2024-01-15')
+    await user.type(screen.getByLabelText(/availability window end/i), '2024-01-20')
     await user.selectOptions(screen.getByLabelText(/preferred time/i), 'morning')
     await user.selectOptions(screen.getByLabelText(/duration/i), '2-hours')
 

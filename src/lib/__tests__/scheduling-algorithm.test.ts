@@ -51,7 +51,8 @@ describe('SchedulingAlgorithm', () => {
     it('should handle overlapping availability with different start times', () => {
       const event = createMockEvent({
         eventType: 'single-day',
-        duration: '1-hour'
+        duration: '1-hour',
+        preferredTime: 'afternoon' // Match the time slots
       })
 
       const participants = [
@@ -85,8 +86,8 @@ describe('SchedulingAlgorithm', () => {
       
       // Should recommend time when both are available (15:00-17:00 overlap)
       expect(recommendation.participantCount).toBe(2)
-      expect(recommendation.startTime.getHours()).toBeGreaterThanOrEqual(15)
-      expect(recommendation.startTime.getHours()).toBeLessThanOrEqual(16) // 1 hour duration
+      expect(recommendation.startTime.getUTCHours()).toBeGreaterThanOrEqual(15)
+      expect(recommendation.startTime.getUTCHours()).toBeLessThanOrEqual(16) // 1 hour duration
     })
 
     it('should prefer times matching preferred time settings', () => {
@@ -131,7 +132,9 @@ describe('SchedulingAlgorithm', () => {
     })
 
     it('should handle no overlapping availability gracefully', () => {
-      const event = createMockEvent()
+      const event = createMockEvent({
+        preferredTime: 'all-day' // Don't filter by time preference for this test
+      })
       const participants = [
         createMockParticipant({
           id: 'participant-1',
@@ -342,11 +345,11 @@ describe('SchedulingAlgorithm', () => {
       const recommendations = algorithm.findOptimalTimes()
 
       // Should prioritize morning times
-      const morningRecs = recommendations.filter(r => 
-        r.startTime.getHours() >= 8 && r.startTime.getHours() < 12
+      const morningRecs = recommendations.filter(r =>
+        r.startTime.getUTCHours() >= 8 && r.startTime.getUTCHours() < 12
       )
-      const afternoonRecs = recommendations.filter(r => 
-        r.startTime.getHours() >= 12 && r.startTime.getHours() < 17
+      const afternoonRecs = recommendations.filter(r =>
+        r.startTime.getUTCHours() >= 12 && r.startTime.getUTCHours() < 17
       )
 
       expect(morningRecs.length).toBeGreaterThan(0)
@@ -384,12 +387,14 @@ describe('SchedulingAlgorithm', () => {
     it('should give bonus points for weekend events', () => {
       const weekendEvent = createMockEvent({
         availabilityStartDate: new Date('2024-01-13'), // Saturday
-        availabilityEndDate: new Date('2024-01-14') // Sunday
+        availabilityEndDate: new Date('2024-01-14'), // Sunday
+        preferredTime: 'all-day' // Remove time preference to test weekend bonus
       })
 
       const weekdayEvent = createMockEvent({
         availabilityStartDate: new Date('2024-01-15'), // Monday
-        availabilityEndDate: new Date('2024-01-16') // Tuesday
+        availabilityEndDate: new Date('2024-01-16'), // Tuesday
+        preferredTime: 'all-day' // Remove time preference to test weekend bonus
       })
 
       const participants = [
