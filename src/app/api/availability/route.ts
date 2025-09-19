@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { saveAvailability, validateAvailabilityData } from '@/lib/services/availability-service';
 
 export async function POST(request: Request) {
   // During build time, just return a placeholder response
@@ -7,73 +8,30 @@ export async function POST(request: Request) {
   }
 
   try {
-    // Dynamic imports to avoid build-time issues
-    const { z } = await import('zod');
-    const { prisma } = await import('@/lib/prisma');
-
-    // Validation schema for availability submission
-    const availabilitySchema = z.object({
-      eventId: z.string(),
-      participantToken: z.string(),
-      timeSlots: z.array(z.object({
-        startTime: z.string().transform((str) => new Date(str)),
-        endTime: z.string().transform((str) => new Date(str)),
-      })),
-    });
-
     const body = await request.json();
-    const validatedData = availabilitySchema.parse(body);
 
-    // Find the participant by token
-    const participant = await prisma.participant.findUnique({
-      where: { token: validatedData.participantToken },
-    });
-
-    if (!participant) {
+    // Validate the request data
+    const validationResult = validateAvailabilityData(body);
+    if ('error' in validationResult) {
       return NextResponse.json(
-        { error: 'Invalid participant token' },
-        { status: 404 }
+        { error: validationResult.error, details: validationResult.details },
+        { status: validationResult.status }
       );
     }
 
-    // Delete existing time slots for this participant/event (in case they're resubmitting)
-    await prisma.timeSlot.deleteMany({
-      where: {
-        eventId: validatedData.eventId,
-        participantId: participant.id,
-      },
-    });
+    // Save the availability data
+    const result = await saveAvailability(validationResult);
+    if ('error' in result) {
+      return NextResponse.json(
+        { error: result.error, details: result.details },
+        { status: result.status }
+      );
+    }
 
-    // Create new time slots
-    const timeSlots = await prisma.timeSlot.createMany({
-      data: validatedData.timeSlots.map((slot) => ({
-        eventId: validatedData.eventId,
-        participantId: participant.id,
-        startTime: slot.startTime,
-        endTime: slot.endTime,
-      })),
-    });
-
-    console.log(`✅ ${participant.name} submitted ${validatedData.timeSlots.length} time slots for event ${validatedData.eventId}`);
-
-    return NextResponse.json({
-      success: true,
-      slotsCreated: timeSlots.count,
-      participant: participant.name,
-    });
+    return NextResponse.json(result);
 
   } catch (error) {
-    console.error('Error saving availability:', error);
-    
-    // Import z here for error checking
-    const { z } = await import('zod');
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Invalid data format', details: error.errors },
-        { status: 400 }
-      );
-    }
-
+    console.error('Error in availability route:', error);
     return NextResponse.json(
       { error: 'Failed to save availability' },
       { status: 500 }

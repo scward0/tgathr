@@ -32,13 +32,13 @@ export function EventForm() {
 
 
   const router = useRouter();
-  const [_error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const onSubmit = async (data: EventFormData) => {
     console.log('Form data being submitted:', data); // Add this line
-    
+
     setIsSubmitting(true);
-    setError(null);
+    setError(null); // Clear any previous errors
     
     try {
       const response = await fetch('/api/events', {
@@ -72,6 +72,13 @@ export function EventForm() {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-2xl mx-auto p-4 overflow-x-hidden">
+      {/* Error Display */}
+      {error && (
+        <div className="p-4 bg-red-900 border border-red-600 rounded-md">
+          <p className="text-sm text-red-300">{error}</p>
+        </div>
+      )}
+
       {/* Event Name */}
       <div className="space-y-2">
         <label htmlFor="name" className="block text-sm font-medium text-gray-300">
@@ -291,6 +298,7 @@ export function EventForm() {
                   <button
                     type="button"
                     onClick={() => remove(index)}
+                    aria-label={`Remove participant ${index + 1}`}
                     className="text-red-400 hover:text-red-300 transition-colors text-sm"
                   >
                     Remove
