@@ -35,8 +35,6 @@ export function EventForm() {
   const [error, setError] = useState<string | null>(null);
 
   const onSubmit = async (data: EventFormData) => {
-    console.log('Form data being submitted:', data); // Add this line
-
     setIsSubmitting(true);
     setError(null); // Clear any previous errors
     
@@ -56,7 +54,6 @@ export function EventForm() {
       }
   
       const result = await response.json();
-      console.log('Event created:', result);
       
       
       // Redirect to dashboard instead of alert
