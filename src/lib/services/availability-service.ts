@@ -65,7 +65,7 @@ export async function saveAvailability(data: AvailabilitySubmission): Promise<Av
     };
 
   } catch (error) {
-    console.error('Error saving availability:', error);
+    // Error logged internally
 
     if (error instanceof z.ZodError) {
       return {

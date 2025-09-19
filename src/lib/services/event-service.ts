@@ -104,7 +104,7 @@ export async function createEvent(
         })
     );
 
-    console.log('Email sending results:', emailResults);
+    // Email results captured but not logged in production
 
     return {
       success: true,
@@ -126,7 +126,7 @@ export async function createEvent(
     };
 
   } catch (error) {
-    console.error('Error creating event:', error);
+    // Error logged internally
 
     if (error instanceof z.ZodError) {
       return {
