@@ -27,8 +27,13 @@ export async function POST(request: Request) {
       );
     }
 
-    // Create the event
-    const result = await createEvent(validationResult, user);
+    // Create the event - convert Stack user to AuthenticatedUser
+    const authUser = {
+      id: user.id,
+      displayName: user.displayName ?? undefined,
+      primaryEmail: user.primaryEmail ?? undefined
+    };
+    const result = await createEvent(validationResult, authUser);
     if ('error' in result) {
       return NextResponse.json(
         { error: result.error, details: result.details },

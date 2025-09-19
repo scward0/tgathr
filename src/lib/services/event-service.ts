@@ -146,10 +146,12 @@ export async function createEvent(
 
 export function validateEventData(body: unknown): EventCreationData | EventCreationError {
   try {
+    // Cast body to object type to ensure spread operation is valid
+    const bodyObj = body as Record<string, any>;
     const processedBody = {
-      ...body,
-      availabilityStartDate: new Date((body as any).availabilityStartDate),
-      availabilityEndDate: new Date((body as any).availabilityEndDate),
+      ...bodyObj,
+      availabilityStartDate: new Date(bodyObj.availabilityStartDate),
+      availabilityEndDate: new Date(bodyObj.availabilityEndDate),
     };
 
     return eventFormSchema.parse(processedBody);
