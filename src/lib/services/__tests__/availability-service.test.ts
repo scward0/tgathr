@@ -1,5 +1,6 @@
 import { saveAvailability, validateAvailabilityData } from '../availability-service';
 import { prisma } from '@/lib/prisma';
+import { isErrorResponse } from '@/lib/types/service-responses';
 
 // Mock Prisma
 jest.mock('@/lib/prisma', () => ({
@@ -10,6 +11,10 @@ jest.mock('@/lib/prisma', () => ({
     availability: {
       create: jest.fn(),
       findMany: jest.fn(),
+      deleteMany: jest.fn(),
+    },
+    timeSlot: {
+      createMany: jest.fn(),
       deleteMany: jest.fn(),
     },
   },
@@ -23,263 +28,340 @@ describe('Availability Service', () => {
   describe('validateAvailabilityData', () => {
     it('should validate valid availability data', () => {
       const validData = {
-        token: 'test-token-123',
+        eventId: 'event-123',
+        participantToken: 'test-token-123',
         timeSlots: [
           {
-            date: '2024-01-15',
-            startTime: '09:00',
-            endTime: '17:00',
+            startTime: '2024-01-15T09:00:00Z',
+            endTime: '2024-01-15T17:00:00Z',
           },
           {
-            date: '2024-01-16',
-            startTime: '10:00',
-            endTime: '16:00',
+            startTime: '2024-01-16T10:00:00Z',
+            endTime: '2024-01-16T16:00:00Z',
           },
         ],
       };
 
       const result = validateAvailabilityData(validData);
 
-      expect(result).not.toHaveProperty('error');
-      expect(result).toHaveProperty('token', 'test-token-123');
-      expect(result).toHaveProperty('timeSlots');
-      if (!('error' in result)) {
-        expect(result.timeSlots).toHaveLength(2);
-        expect(result.timeSlots[0]).toHaveProperty('date', '2024-01-15');
+      expect(result.success).toBe(true);
+      if (!isErrorResponse(result)) {
+        expect(result.data?.eventId).toBe('event-123');
+        expect(result.data?.participantToken).toBe('test-token-123');
+        expect(result.data?.timeSlots).toHaveLength(2);
       }
     });
 
     it('should reject invalid token', () => {
       const invalidData = {
-        token: '',
+        eventId: 'event-123',
+        participantToken: '',
         timeSlots: [
           {
-            date: '2024-01-15',
-            startTime: '09:00',
-            endTime: '17:00',
+            startTime: '2024-01-15T09:00:00Z',
+            endTime: '2024-01-15T17:00:00Z',
           },
         ],
       };
 
       const result = validateAvailabilityData(invalidData);
 
-      expect(result).toHaveProperty('error', 'Validation error');
-      expect(result).toHaveProperty('status', 400);
+      expect(result.success).toBe(false);
+      if (isErrorResponse(result)) {
+        expect(result.error).toBe('Validation error');
+        expect(result.status).toBe(400);
+      }
     });
 
     it('should reject empty time slots', () => {
       const invalidData = {
-        token: 'test-token',
+        eventId: 'event-123',
+        participantToken: 'test-token',
         timeSlots: [],
       };
 
       const result = validateAvailabilityData(invalidData);
 
-      expect(result).toHaveProperty('error', 'Validation error');
-      expect(result).toHaveProperty('details');
+      expect(result.success).toBe(false);
+      if (isErrorResponse(result)) {
+        expect(result.error).toBe('Validation error');
+        expect(result.details).toBeDefined();
+      }
     });
 
     it('should reject invalid time slot format', () => {
       const invalidData = {
-        token: 'test-token',
+        eventId: 'event-123',
+        participantToken: 'test-token',
         timeSlots: [
           {
-            date: 'invalid-date',
-            startTime: '25:00', // Invalid time
-            endTime: '26:00',
+            startTime: 'invalid-date-format-xyz',
+            endTime: 'invalid-date-format-xyz',
           },
         ],
       };
 
       const result = validateAvailabilityData(invalidData);
 
-      expect(result).toHaveProperty('error', 'Validation error');
+      expect(result.success).toBe(false);
+      if (isErrorResponse(result)) {
+        expect(result.error).toBe('Validation error');
+      }
     });
 
     it('should reject missing required fields', () => {
       const invalidData = {
-        token: 'test-token',
+        eventId: 'event-123',
+        participantToken: 'test-token',
         // Missing timeSlots
       };
 
       const result = validateAvailabilityData(invalidData);
 
-      expect(result).toHaveProperty('error', 'Validation error');
+      expect(result.success).toBe(false);
+      if (isErrorResponse(result)) {
+        expect(result.error).toBe('Validation error');
+      }
     });
 
     it('should handle non-object input', () => {
       const result = validateAvailabilityData('not an object');
 
-      expect(result).toHaveProperty('error');
-      expect(result).toHaveProperty('status', 400);
+      expect(result.success).toBe(false);
+      if (isErrorResponse(result)) {
+        expect(result.error).toBe('Validation error');
+      }
     });
 
     it('should handle null input', () => {
       const result = validateAvailabilityData(null);
 
-      expect(result).toHaveProperty('error');
-      expect(result).toHaveProperty('status', 400);
-    });
-  });
-
-  describe('saveAvailability', () => {
-    const validAvailabilityData = {
-      token: 'test-token-123',
-      timeSlots: [
-        {
-          date: '2024-01-15',
-          startTime: '09:00',
-          endTime: '17:00',
-        },
-        {
-          date: '2024-01-16',
-          startTime: '10:00',
-          endTime: '16:00',
-        },
-      ],
-    };
-
-    const mockParticipant = {
-      id: 'participant-123',
-      name: 'John Doe',
-      email: 'john@example.com',
-      phoneNumber: '+1234567890',
-      token: 'test-token-123',
-    };
-
-    it('should save availability successfully', async () => {
-      (prisma.participant.findUnique as jest.Mock).mockResolvedValue(mockParticipant);
-      (prisma.availability.create as jest.Mock).mockImplementation((data) => ({
-        id: 'availability-' + Math.random(),
-        ...data.data,
-      }));
-      (prisma.availability.findMany as jest.Mock).mockResolvedValue([
-        {
-          participantId: 'participant-123',
-          date: new Date('2024-01-15'),
-          startTime: '09:00',
-          endTime: '17:00',
-        },
-        {
-          participantId: 'participant-123',
-          date: new Date('2024-01-16'),
-          startTime: '10:00',
-          endTime: '16:00',
-        },
-      ]);
-
-      const result = await saveAvailability(validAvailabilityData);
-
-      expect(result).toHaveProperty('success', true);
-      expect(result).toHaveProperty('participantName', 'John Doe');
-      expect(result).toHaveProperty('savedSlots', 2);
-      expect(result).toHaveProperty('availability');
-      expect(prisma.participant.findUnique).toHaveBeenCalledWith({
-        where: { token: 'test-token-123' },
-      });
-      expect(prisma.availability.create).toHaveBeenCalledTimes(2);
+      expect(result.success).toBe(false);
+      if (isErrorResponse(result)) {
+        expect(result.error).toBe('Validation error');
+      }
     });
 
-    it('should handle invalid token', async () => {
-      (prisma.participant.findUnique as jest.Mock).mockResolvedValue(null);
+    it('should handle undefined input', () => {
+      const result = validateAvailabilityData(undefined);
 
-      const result = await saveAvailability(validAvailabilityData);
-
-      expect(result).toHaveProperty('error', 'Invalid participant token');
-      expect(result).toHaveProperty('status', 404);
-      expect(prisma.availability.create).not.toHaveBeenCalled();
+      expect(result.success).toBe(false);
+      if (isErrorResponse(result)) {
+        expect(result.error).toBe('Validation error');
+      }
     });
 
-    it('should handle database errors when finding participant', async () => {
-      (prisma.participant.findUnique as jest.Mock).mockRejectedValue(
-        new Error('Database connection failed')
-      );
-
-      const result = await saveAvailability(validAvailabilityData);
-
-      expect(result).toHaveProperty('error', 'Failed to save availability');
-      expect(result).toHaveProperty('details', 'Database connection failed');
-      expect(result).toHaveProperty('status', 500);
-    });
-
-    it('should handle database errors when creating availability', async () => {
-      (prisma.participant.findUnique as jest.Mock).mockResolvedValue(mockParticipant);
-      (prisma.availability.create as jest.Mock).mockRejectedValue(
-        new Error('Failed to insert availability')
-      );
-
-      const result = await saveAvailability(validAvailabilityData);
-
-      expect(result).toHaveProperty('error', 'Failed to save availability');
-      expect(result).toHaveProperty('details', 'Failed to insert availability');
-      expect(result).toHaveProperty('status', 500);
-    });
-
-    it('should handle single time slot', async () => {
-      const singleSlotData = {
-        token: 'test-token-123',
+    it('should transform date strings to Date objects', () => {
+      const dataWithStrings = {
+        eventId: 'event-123',
+        participantToken: 'test-token',
         timeSlots: [
           {
-            date: '2024-01-15',
-            startTime: '09:00',
-            endTime: '17:00',
+            startTime: '2024-01-15T09:00:00Z',
+            endTime: '2024-01-15T17:00:00Z',
           },
         ],
       };
 
-      (prisma.participant.findUnique as jest.Mock).mockResolvedValue(mockParticipant);
-      (prisma.availability.create as jest.Mock).mockResolvedValue({
-        id: 'availability-1',
-        participantId: 'participant-123',
-        date: new Date('2024-01-15'),
-        startTime: '09:00',
-        endTime: '17:00',
-      });
-      (prisma.availability.findMany as jest.Mock).mockResolvedValue([
-        {
-          participantId: 'participant-123',
-          date: new Date('2024-01-15'),
-          startTime: '09:00',
-          endTime: '17:00',
-        },
-      ]);
+      const result = validateAvailabilityData(dataWithStrings);
 
-      const result = await saveAvailability(singleSlotData);
-
-      expect(result).toHaveProperty('success', true);
-      expect(result).toHaveProperty('savedSlots', 1);
-      expect(prisma.availability.create).toHaveBeenCalledTimes(1);
+      expect(result.success).toBe(true);
+      if (!isErrorResponse(result)) {
+        expect(result.data?.timeSlots[0].startTime).toBeInstanceOf(Date);
+        expect(result.data?.timeSlots[0].endTime).toBeInstanceOf(Date);
+      }
     });
+  });
 
-    it('should handle unknown errors', async () => {
-      (prisma.participant.findUnique as jest.Mock).mockRejectedValue('Unknown error');
+  describe('saveAvailability', () => {
+    it('should save availability successfully', async () => {
+      const validAvailabilityData = {
+        eventId: 'event-123',
+        participantToken: 'test-token-123',
+        timeSlots: [
+          {
+            startTime: new Date('2024-01-15T09:00:00Z'),
+            endTime: new Date('2024-01-15T17:00:00Z'),
+          },
+          {
+            startTime: new Date('2024-01-16T10:00:00Z'),
+            endTime: new Date('2024-01-16T16:00:00Z'),
+          },
+        ],
+      };
+
+      (prisma.participant.findUnique as jest.Mock).mockResolvedValueOnce({
+        id: 'participant-123',
+        name: 'John Doe',
+        token: 'test-token-123',
+      });
+
+      (prisma.timeSlot.deleteMany as jest.Mock).mockResolvedValueOnce({ count: 0 });
+      (prisma.timeSlot.createMany as jest.Mock).mockResolvedValueOnce({ count: 2 });
 
       const result = await saveAvailability(validAvailabilityData);
 
-      expect(result).toHaveProperty('error', 'Failed to save availability');
-      expect(result).toHaveProperty('details', 'Unknown error');
-      expect(result).toHaveProperty('status', 500);
+      expect(result.success).toBe(true);
+      if (!isErrorResponse(result)) {
+        expect(result.data?.slotsCreated).toBe(2);
+        expect(result.data?.participant).toBe('John Doe');
+      }
+
+      expect(prisma.participant.findUnique).toHaveBeenCalledWith({
+        where: { token: 'test-token-123' },
+      });
+      expect(prisma.timeSlot.createMany).toHaveBeenCalledWith({
+        data: expect.arrayContaining([
+          expect.objectContaining({
+            eventId: 'event-123',
+            participantId: 'participant-123',
+          }),
+        ]),
+      });
     });
 
-    it('should convert date strings to Date objects when creating availability', async () => {
-      (prisma.participant.findUnique as jest.Mock).mockResolvedValue(mockParticipant);
-      (prisma.availability.create as jest.Mock).mockImplementation((data) => ({
-        id: 'availability-1',
-        ...data.data,
-      }));
-      (prisma.availability.findMany as jest.Mock).mockResolvedValue([]);
+    it('should handle invalid participant token', async () => {
+      const invalidTokenData = {
+        eventId: 'event-123',
+        participantToken: 'invalid-token',
+        timeSlots: [
+          {
+            startTime: new Date('2024-01-15T09:00:00Z'),
+            endTime: new Date('2024-01-15T17:00:00Z'),
+          },
+        ],
+      };
 
-      await saveAvailability(validAvailabilityData);
+      (prisma.participant.findUnique as jest.Mock).mockResolvedValueOnce(null);
 
-      expect(prisma.availability.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
-            date: expect.any(Date),
-            startTime: '09:00',
-            endTime: '17:00',
-          }),
-        })
+      const result = await saveAvailability(invalidTokenData);
+
+      expect(result.success).toBe(false);
+      if (isErrorResponse(result)) {
+        expect(result.error).toBe('Invalid participant token');
+        expect(result.status).toBe(404);
+      }
+    });
+
+    it('should handle database errors', async () => {
+      const validData = {
+        eventId: 'event-123',
+        participantToken: 'test-token-123',
+        timeSlots: [
+          {
+            startTime: new Date('2024-01-15T09:00:00Z'),
+            endTime: new Date('2024-01-15T17:00:00Z'),
+          },
+        ],
+      };
+
+      (prisma.participant.findUnique as jest.Mock).mockResolvedValueOnce({
+        id: 'participant-123',
+        name: 'John Doe',
+        token: 'test-token-123',
+      });
+
+      (prisma.timeSlot.deleteMany as jest.Mock).mockResolvedValueOnce({ count: 0 });
+      (prisma.timeSlot.createMany as jest.Mock).mockRejectedValueOnce(
+        new Error('Database connection failed')
       );
+
+      const result = await saveAvailability(validData);
+
+      expect(result.success).toBe(false);
+      if (isErrorResponse(result)) {
+        expect(result.error).toBe('Failed to save availability');
+        expect(result.details).toBe('Database connection failed');
+        expect(result.status).toBe(500);
+      }
+    });
+
+    it('should handle single time slot', async () => {
+      const singleSlotData = {
+        eventId: 'event-123',
+        participantToken: 'test-token-456',
+        timeSlots: [
+          {
+            startTime: new Date('2024-01-20T14:00:00Z'),
+            endTime: new Date('2024-01-20T18:00:00Z'),
+          },
+        ],
+      };
+
+      (prisma.participant.findUnique as jest.Mock).mockResolvedValueOnce({
+        id: 'participant-456',
+        name: 'Jane Smith',
+        token: 'test-token-456',
+      });
+
+      (prisma.timeSlot.deleteMany as jest.Mock).mockResolvedValueOnce({ count: 1 });
+      (prisma.timeSlot.createMany as jest.Mock).mockResolvedValueOnce({ count: 1 });
+
+      const result = await saveAvailability(singleSlotData);
+
+      expect(result.success).toBe(true);
+      if (!isErrorResponse(result)) {
+        expect(result.data?.slotsCreated).toBe(1);
+      }
+      expect(prisma.timeSlot.createMany).toHaveBeenCalledTimes(1);
+    });
+
+    it('should handle unknown errors', async () => {
+      const validData = {
+        eventId: 'event-123',
+        participantToken: 'test-token-123',
+        timeSlots: [
+          {
+            startTime: new Date('2024-01-15T09:00:00Z'),
+            endTime: new Date('2024-01-15T17:00:00Z'),
+          },
+        ],
+      };
+
+      (prisma.participant.findUnique as jest.Mock).mockRejectedValueOnce('Unknown error');
+
+      const result = await saveAvailability(validData);
+
+      expect(result.success).toBe(false);
+      if (isErrorResponse(result)) {
+        expect(result.error).toBe('Failed to save availability');
+        expect(result.details).toBe('Unknown error');
+        expect(result.status).toBe(500);
+      }
+    });
+
+    it('should delete existing time slots before creating new ones', async () => {
+      const validData = {
+        eventId: 'event-123',
+        participantToken: 'test-token-123',
+        timeSlots: [
+          {
+            startTime: new Date('2024-01-15T09:00:00Z'),
+            endTime: new Date('2024-01-15T17:00:00Z'),
+          },
+        ],
+      };
+
+      (prisma.participant.findUnique as jest.Mock).mockResolvedValueOnce({
+        id: 'participant-123',
+        name: 'John Doe',
+        token: 'test-token-123',
+      });
+
+      (prisma.timeSlot.deleteMany as jest.Mock).mockResolvedValueOnce({ count: 3 });
+      (prisma.timeSlot.createMany as jest.Mock).mockResolvedValueOnce({ count: 1 });
+
+      await saveAvailability(validData);
+
+      expect(prisma.timeSlot.deleteMany).toHaveBeenCalledWith({
+        where: {
+          eventId: 'event-123',
+          participantId: 'participant-123',
+        },
+      });
+      // Verify both methods were called
+      expect(prisma.timeSlot.deleteMany).toHaveBeenCalled();
+      expect(prisma.timeSlot.createMany).toHaveBeenCalled();
     });
   });
 });

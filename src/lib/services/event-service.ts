@@ -3,11 +3,11 @@ import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { eventFormSchema } from '@/types/event';
 import { sendEventInvitation } from '@/lib/email';
+import { ServiceResponse, createErrorResponse, createSuccessResponse } from '@/lib/types/service-responses';
 
 export type EventCreationData = z.infer<typeof eventFormSchema>;
 
 export interface EventCreationResult {
-  success: true;
   id: string;
   name: string;
   description?: string;
@@ -25,12 +25,6 @@ export interface EventCreationResult {
   }>;
 }
 
-export interface EventCreationError {
-  error: string;
-  details?: any;
-  status: number;
-}
-
 export interface AuthenticatedUser {
   id: string;
   displayName?: string;
@@ -40,7 +34,7 @@ export interface AuthenticatedUser {
 export async function createEvent(
   data: EventCreationData,
   user: AuthenticatedUser
-): Promise<EventCreationResult | EventCreationError> {
+): Promise<ServiceResponse<EventCreationResult>> {
   try {
     // Start a transaction to ensure data consistency
     const result = await prisma.$transaction(async (tx: any) => {
@@ -89,25 +83,31 @@ export async function createEvent(
 
     // Send email invitations
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-    const emailResults = await Promise.all(
+    const emailResults = await Promise.allSettled(
       result.participants
         .filter((participant: any) => participant.email)
         .map(async (participant: any) => {
-          const availabilityUrl = `${appUrl}/respond/${participant.token}`;
-          return await sendEventInvitation(
-            participant.email,
-            participant.name,
-            result.name,
-            user.displayName || user.primaryEmail || 'Event Organizer',
-            availabilityUrl
-          );
+          try {
+            const availabilityUrl = `${appUrl}/respond/${participant.token}`;
+            return await sendEventInvitation(
+              participant.email,
+              participant.name,
+              result.name,
+              user.displayName || user.primaryEmail || 'Event Organizer',
+              availabilityUrl
+            );
+          } catch (error) {
+            return {
+              success: false,
+              error: error instanceof Error ? error.message : 'Email sending failed',
+            };
+          }
         })
     );
 
     // Email results captured but not logged in production
 
-    return {
-      success: true,
+    return createSuccessResponse({
       id: result.id,
       name: result.name,
       description: result.description,
@@ -123,49 +123,49 @@ export async function createEvent(
         name: p.name,
         token: p.token,
       })),
-    };
+    });
 
   } catch (error) {
     // Error logged internally
 
     if (error instanceof z.ZodError) {
-      return {
-        error: 'Validation error',
-        details: error.errors,
-        status: 400
-      };
+      return createErrorResponse('Validation error', 400, error.errors);
     }
 
-    return {
-      error: 'Failed to create event',
-      details: error instanceof Error ? error.message : 'Unknown error',
-      status: 500
-    };
+    return createErrorResponse(
+      'Failed to create event',
+      500,
+      error instanceof Error ? error.message : 'Unknown error'
+    );
   }
 }
 
-export function validateEventData(body: unknown): EventCreationData | EventCreationError {
+export function validateEventData(body: unknown): ServiceResponse<EventCreationData> {
   try {
     // Cast body to object type to ensure spread operation is valid
     const bodyObj = body as Record<string, any>;
+
+    // Handle null or undefined input
+    if (!bodyObj || typeof bodyObj !== 'object') {
+      return createErrorResponse('Invalid input data', 400, 'Input must be an object');
+    }
+
     const processedBody = {
       ...bodyObj,
       availabilityStartDate: new Date(bodyObj.availabilityStartDate),
       availabilityEndDate: new Date(bodyObj.availabilityEndDate),
     };
 
-    return eventFormSchema.parse(processedBody);
+    const validated = eventFormSchema.parse(processedBody);
+    return createSuccessResponse(validated);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return {
-        error: 'Validation error',
-        details: error.errors,
-        status: 400
-      };
+      return createErrorResponse('Validation error', 400, error.errors);
     }
-    return {
-      error: 'Failed to validate data',
-      status: 500
-    };
+    return createErrorResponse(
+      'Failed to validate data',
+      500,
+      error instanceof Error ? error.message : 'Unknown error'
+    );
   }
 }

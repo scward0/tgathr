@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { stackServerApp } from '@/lib/stack';
 import { createEvent, validateEventData } from '@/lib/services/event-service';
+import { isErrorResponse } from '@/lib/types/service-responses';
 
 export async function POST(request: Request) {
   // During build time, just return a placeholder response
@@ -20,7 +21,7 @@ export async function POST(request: Request) {
 
     // Validate the request data
     const validationResult = validateEventData(body);
-    if ('error' in validationResult) {
+    if (isErrorResponse(validationResult)) {
       return NextResponse.json(
         { error: validationResult.error, details: validationResult.details },
         { status: validationResult.status }
@@ -33,15 +34,15 @@ export async function POST(request: Request) {
       displayName: user.displayName ?? undefined,
       primaryEmail: user.primaryEmail ?? undefined
     };
-    const result = await createEvent(validationResult, authUser);
-    if ('error' in result) {
+    const result = await createEvent(validationResult.data!, authUser);
+    if (isErrorResponse(result)) {
       return NextResponse.json(
         { error: result.error, details: result.details },
         { status: result.status }
       );
     }
 
-    return NextResponse.json(result, { status: 201 });
+    return NextResponse.json(result.data, { status: 201 });
 
   } catch (error) {
     console.error('Error in events route:', error);

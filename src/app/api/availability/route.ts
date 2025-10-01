@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { saveAvailability, validateAvailabilityData } from '@/lib/services/availability-service';
+import { isErrorResponse } from '@/lib/types/service-responses';
 
 export async function POST(request: Request) {
   // During build time, just return a placeholder response
@@ -12,7 +13,7 @@ export async function POST(request: Request) {
 
     // Validate the request data
     const validationResult = validateAvailabilityData(body);
-    if ('error' in validationResult) {
+    if (isErrorResponse(validationResult)) {
       return NextResponse.json(
         { error: validationResult.error, details: validationResult.details },
         { status: validationResult.status }
@@ -20,15 +21,15 @@ export async function POST(request: Request) {
     }
 
     // Save the availability data
-    const result = await saveAvailability(validationResult);
-    if ('error' in result) {
+    const result = await saveAvailability(validationResult.data!);
+    if (isErrorResponse(result)) {
       return NextResponse.json(
         { error: result.error, details: result.details },
         { status: result.status }
       );
     }
 
-    return NextResponse.json(result);
+    return NextResponse.json(result.data);
 
   } catch (error) {
     console.error('Error in availability route:', error);

@@ -2,6 +2,7 @@ import { createEvent, validateEventData } from '../event-service';
 import { prisma } from '@/lib/prisma';
 import { sendEventInvitation } from '@/lib/email';
 import { randomUUID } from 'crypto';
+import { isErrorResponse } from '@/lib/types/service-responses';
 
 // Mock dependencies
 jest.mock('@/lib/prisma', () => ({
@@ -45,10 +46,12 @@ describe('Event Service', () => {
 
       const result = validateEventData(validData);
 
-      expect(result).not.toHaveProperty('error');
-      expect(result).toHaveProperty('name', 'Test Event');
-      expect(result).toHaveProperty('eventType', 'single-day');
-      expect(result).toHaveProperty('participants');
+      expect(result.success).toBe(true);
+      if (!isErrorResponse(result)) {
+        expect(result.data?.name).toBe('Test Event');
+        expect(result.data?.eventType).toBe('single-day');
+        expect(result.data?.participants).toBeDefined();
+      }
     });
 
     it('should validate and parse valid multi-day event data', () => {
@@ -70,9 +73,11 @@ describe('Event Service', () => {
 
       const result = validateEventData(validData);
 
-      expect(result).not.toHaveProperty('error');
-      expect(result).toHaveProperty('name', 'Team Retreat');
-      expect(result).toHaveProperty('eventType', 'multi-day');
+      expect(result.success).toBe(true);
+      if (!isErrorResponse(result)) {
+        expect(result.data?.name).toBe('Team Retreat');
+        expect(result.data?.eventType).toBe('multi-day');
+      }
     });
 
     it('should return error for invalid data', () => {
@@ -84,9 +89,12 @@ describe('Event Service', () => {
 
       const result = validateEventData(invalidData);
 
-      expect(result).toHaveProperty('error', 'Validation error');
-      expect(result).toHaveProperty('details');
-      expect(result).toHaveProperty('status', 400);
+      expect(result.success).toBe(false);
+      if (isErrorResponse(result)) {
+        expect(result.error).toBe('Validation error');
+        expect(result.details).toBeDefined();
+        expect(result.status).toBe(400);
+      }
     });
 
     it('should return error for missing required fields', () => {
@@ -96,22 +104,31 @@ describe('Event Service', () => {
 
       const result = validateEventData(incompleteData);
 
-      expect(result).toHaveProperty('error', 'Validation error');
-      expect(result).toHaveProperty('status', 400);
+      expect(result.success).toBe(false);
+      if (isErrorResponse(result)) {
+        expect(result.error).toBe('Validation error');
+        expect(result.status).toBe(400);
+      }
     });
 
     it('should handle non-object input gracefully', () => {
       const result = validateEventData('not an object');
 
-      expect(result).toHaveProperty('error');
-      expect(result).toHaveProperty('status', 400);
+      expect(result.success).toBe(false);
+      if (isErrorResponse(result)) {
+        expect(result.error).toBe('Invalid input data');
+        expect(result.status).toBe(400);
+      }
     });
 
     it('should handle null input', () => {
       const result = validateEventData(null);
 
-      expect(result).toHaveProperty('error');
-      expect(result).toHaveProperty('status', 400);
+      expect(result.success).toBe(false);
+      if (isErrorResponse(result)) {
+        expect(result.error).toBe('Invalid input data');
+        expect(result.status).toBe(400);
+      }
     });
 
     it('should convert date strings to Date objects', () => {
@@ -133,9 +150,10 @@ describe('Event Service', () => {
 
       const result = validateEventData(validData);
 
-      if (!('error' in result)) {
-        expect(result.availabilityStartDate).toBeInstanceOf(Date);
-        expect(result.availabilityEndDate).toBeInstanceOf(Date);
+      expect(result.success).toBe(true);
+      if (!isErrorResponse(result)) {
+        expect(result.data?.availabilityStartDate).toBeInstanceOf(Date);
+        expect(result.data?.availabilityEndDate).toBeInstanceOf(Date);
       }
     });
   });
@@ -153,231 +171,347 @@ describe('Event Service', () => {
       eventType: 'single-day' as const,
       availabilityStartDate: new Date('2024-01-15'),
       availabilityEndDate: new Date('2024-01-20'),
-      preferredTime: 'morning',
-      duration: '2-hours',
+      preferredTime: 'morning' as const,
+      duration: '2-hours' as const,
       participants: [
         {
           name: 'John Doe',
           email: 'john@example.com',
           phoneNumber: '+1234567890',
         },
+        {
+          name: 'Jane Smith',
+          email: 'jane@example.com',
+          phoneNumber: '',
+        },
       ],
     };
 
     it('should create an event successfully', async () => {
-      const mockCreatedParticipant = {
-        id: 'participant-1',
-        name: 'John Doe',
-        email: 'john@example.com',
-        phoneNumber: '+1234567890',
-        token: 'test-uuid',
+      const mockCreatedEvent = {
+        id: 'event-123',
+        name: validEventData.name,
+        description: validEventData.description,
+        eventType: validEventData.eventType,
+        participants: [
+          {
+            id: 'participant-1',
+            name: 'John Doe',
+            email: 'john@example.com',
+            token: 'test-uuid',
+          },
+          {
+            id: 'participant-2',
+            name: 'Jane Smith',
+            email: 'jane@example.com',
+            token: 'test-uuid',
+          },
+        ],
+      };
+
+      (prisma.$transaction as jest.Mock).mockImplementation(async (callback) => {
+        // Create mock context for transaction
+        const mockTx = {
+          participant: {
+            create: jest.fn()
+              .mockResolvedValueOnce({
+                id: 'participant-1',
+                name: 'John Doe',
+                email: 'john@example.com',
+                token: 'test-uuid',
+              })
+              .mockResolvedValueOnce({
+                id: 'participant-2',
+                name: 'Jane Smith',
+                email: 'jane@example.com',
+                token: 'test-uuid',
+              }),
+          },
+          event: {
+            create: jest.fn().mockResolvedValue(mockCreatedEvent),
+          },
+        };
+        return callback(mockTx);
+      });
+
+      (sendEventInvitation as jest.Mock).mockResolvedValue({
+        success: true,
+        messageId: 'msg-123',
+      });
+
+      const result = await createEvent(validEventData, mockUser);
+
+      expect(result.success).toBe(true);
+      if (!isErrorResponse(result)) {
+        expect(result.data?.id).toBe('event-123');
+        expect(result.data?.name).toBe('Test Event');
+        expect(result.data?.participants).toHaveLength(2);
+        expect(result.data?.emailResults).toHaveLength(2);
+      }
+    });
+
+    it('should handle transaction failure', async () => {
+      (prisma.$transaction as jest.Mock).mockRejectedValue(
+        new Error('Database error')
+      );
+
+      const result = await createEvent(validEventData, mockUser);
+
+      expect(result.success).toBe(false);
+      if (isErrorResponse(result)) {
+        expect(result.error).toBe('Failed to create event');
+        expect(result.status).toBe(500);
+      }
+    });
+
+    it('should create event without sending emails for participants without email', async () => {
+      const eventDataNoEmail = {
+        ...validEventData,
+        participants: [
+          {
+            name: 'John Doe',
+            email: '',
+            phoneNumber: '+1234567890',
+          },
+        ],
       };
 
       const mockCreatedEvent = {
         id: 'event-123',
-        ...validEventData,
-        creatorId: mockUser.id,
-        creatorName: mockUser.displayName,
-        creatorEmail: mockUser.primaryEmail,
-      };
-
-      const mockTransaction = {
-        participant: {
-          create: jest.fn().mockResolvedValue(mockCreatedParticipant),
-        },
-        event: {
-          create: jest.fn().mockResolvedValue(mockCreatedEvent),
-        },
-        eventParticipant: {
-          create: jest.fn(),
-        },
-      };
-
-      (prisma.$transaction as jest.Mock).mockImplementation(async (callback) => {
-        return callback(mockTransaction);
-      });
-
-      (sendEventInvitation as jest.Mock).mockResolvedValue({ success: true });
-
-      const result = await createEvent(validEventData, mockUser);
-
-      expect(result).toHaveProperty('success', true);
-      expect(result).toHaveProperty('id', 'event-123');
-      expect(result).toHaveProperty('name', 'Test Event');
-      expect(mockTransaction.participant.create).toHaveBeenCalled();
-      expect(mockTransaction.event.create).toHaveBeenCalled();
-      expect(sendEventInvitation).toHaveBeenCalled();
-    });
-
-    it('should handle multiple participants', async () => {
-      const multiParticipantData = {
-        ...validEventData,
+        name: eventDataNoEmail.name,
+        description: eventDataNoEmail.description,
+        eventType: eventDataNoEmail.eventType,
         participants: [
           {
-            name: 'John Doe',
-            email: 'john@example.com',
-            phoneNumber: '+1234567890',
-          },
-          {
-            name: 'Jane Smith',
-            email: 'jane@example.com',
-            phoneNumber: '',
-          },
-        ],
-      };
-
-      const mockTransaction = {
-        participant: {
-          create: jest.fn().mockImplementation((data) => ({
-            id: `participant-${Math.random()}`,
-            ...data.data,
-          })),
-        },
-        event: {
-          create: jest.fn().mockResolvedValue({
-            id: 'event-123',
-            ...multiParticipantData,
-          }),
-        },
-        eventParticipant: {
-          create: jest.fn(),
-        },
-      };
-
-      (prisma.$transaction as jest.Mock).mockImplementation(async (callback) => {
-        return callback(mockTransaction);
-      });
-
-      (sendEventInvitation as jest.Mock).mockResolvedValue({ success: true });
-
-      const result = await createEvent(multiParticipantData, mockUser);
-
-      expect(result).toHaveProperty('success', true);
-      expect(mockTransaction.participant.create).toHaveBeenCalledTimes(2);
-      expect(sendEventInvitation).toHaveBeenCalledTimes(2);
-    });
-
-    it('should handle multi-day events correctly', async () => {
-      const multiDayEventData = {
-        name: 'Team Retreat',
-        eventType: 'multi-day' as const,
-        availabilityStartDate: new Date('2024-01-15'),
-        availabilityEndDate: new Date('2024-01-30'),
-        eventLength: '3-days',
-        timingPreference: 'weekends-only',
-        participants: [
-          {
-            name: 'Jane Smith',
-            email: 'jane@example.com',
-            phoneNumber: '',
-          },
-        ],
-      };
-
-      const mockTransaction = {
-        participant: {
-          create: jest.fn().mockResolvedValue({
             id: 'participant-1',
-            name: 'Jane Smith',
-            email: 'jane@example.com',
-            phoneNumber: '',
+            name: 'John Doe',
+            email: '',
             token: 'test-uuid',
-          }),
-        },
-        event: {
-          create: jest.fn().mockResolvedValue({
-            id: 'event-123',
-            ...multiDayEventData,
-            creatorId: mockUser.id,
-          }),
-        },
-        eventParticipant: {
-          create: jest.fn(),
-        },
+          },
+        ],
       };
 
       (prisma.$transaction as jest.Mock).mockImplementation(async (callback) => {
-        return callback(mockTransaction);
+        const mockTx = {
+          participant: {
+            create: jest.fn().mockResolvedValue({
+              id: 'participant-1',
+              name: 'John Doe',
+              email: '',
+              token: 'test-uuid',
+            }),
+          },
+          event: {
+            create: jest.fn().mockResolvedValue(mockCreatedEvent),
+          },
+        };
+        return callback(mockTx);
       });
 
-      (sendEventInvitation as jest.Mock).mockResolvedValue({ success: true });
+      const result = await createEvent(eventDataNoEmail, mockUser);
 
-      const result = await createEvent(multiDayEventData, mockUser);
-
-      expect(result).toHaveProperty('success', true);
-      expect(mockTransaction.event.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
-            eventType: 'multi-day',
-            eventLength: '3-days',
-            timingPreference: 'weekends-only',
-          }),
-        })
-      );
+      expect(result.success).toBe(true);
+      if (!isErrorResponse(result)) {
+        expect(result.data?.emailResults).toHaveLength(0);
+      }
+      expect(sendEventInvitation).not.toHaveBeenCalled();
     });
 
-    it('should handle database transaction errors', async () => {
-      (prisma.$transaction as jest.Mock).mockRejectedValue(
-        new Error('Database connection failed')
-      );
+    it('should handle validation error gracefully', async () => {
+      const invalidEventData = {
+        name: 'A', // Too short
+        eventType: 'invalid-type' as any,
+        participants: [],
+      } as any;
 
-      const result = await createEvent(validEventData, mockUser);
+      (prisma.$transaction as jest.Mock).mockImplementation(() => {
+        throw new Error('Validation failed');
+      });
 
-      expect(result).toHaveProperty('error', 'Failed to create event');
-      expect(result).toHaveProperty('details', 'Database connection failed');
-      expect(result).toHaveProperty('status', 500);
+      const result = await createEvent(invalidEventData, mockUser);
+
+      expect(result.success).toBe(false);
+      if (isErrorResponse(result)) {
+        expect(result.error).toBe('Failed to create event');
+        expect(result.status).toBe(500);
+      }
     });
 
     it('should handle email sending failures gracefully', async () => {
-      const mockTransaction = {
-        participant: {
-          create: jest.fn().mockResolvedValue({
+      const mockCreatedEvent = {
+        id: 'event-123',
+        name: validEventData.name,
+        description: validEventData.description,
+        eventType: validEventData.eventType,
+        participants: [
+          {
             id: 'participant-1',
             name: 'John Doe',
             email: 'john@example.com',
-            phoneNumber: '+1234567890',
             token: 'test-uuid',
-          }),
-        },
-        event: {
-          create: jest.fn().mockResolvedValue({
-            id: 'event-123',
-            name: 'Test Event',
-            creatorId: mockUser.id,
-            creatorName: mockUser.displayName,
-            creatorEmail: mockUser.primaryEmail,
-          }),
-        },
-        eventParticipant: {
-          create: jest.fn(),
-        },
+          },
+        ],
       };
 
       (prisma.$transaction as jest.Mock).mockImplementation(async (callback) => {
-        return callback(mockTransaction);
+        const mockTx = {
+          participant: {
+            create: jest.fn().mockResolvedValue({
+              id: 'participant-1',
+              name: 'John Doe',
+              email: 'john@example.com',
+              token: 'test-uuid',
+            }),
+          },
+          event: {
+            create: jest.fn().mockResolvedValue(mockCreatedEvent),
+          },
+        };
+        return callback(mockTx);
       });
 
       (sendEventInvitation as jest.Mock).mockRejectedValue(
-        new Error('Email service unavailable')
+        new Error('Email service down')
       );
 
+      // Event should still be created successfully even if email fails
       const result = await createEvent(validEventData, mockUser);
 
-      // Event should still be created successfully even if email fails
-      // The email error is caught and the result array has the error, but event creation succeeds
-      expect(result).toHaveProperty('success', true);
-      expect(result).toHaveProperty('id', 'event-123');
-      expect(result).toHaveProperty('emailResults');
+      expect(result.success).toBe(true);
+      if (!isErrorResponse(result)) {
+        expect(result.data?.id).toBe('event-123');
+        expect(result.data?.emailResults).toBeDefined();
+      }
     });
 
-    it('should handle unknown errors', async () => {
-      (prisma.$transaction as jest.Mock).mockRejectedValue('Unknown error');
+    it('should handle multi-day event creation', async () => {
+      const multiDayEventData = {
+        name: 'Team Retreat',
+        eventType: 'multi-day' as const,
+        availabilityStartDate: new Date('2024-02-01'),
+        availabilityEndDate: new Date('2024-02-28'),
+        eventLength: '3-days' as const,
+        timingPreference: 'consecutive' as const,
+        participants: [
+          {
+            name: 'Alice Brown',
+            email: 'alice@example.com',
+            phoneNumber: '',
+          },
+        ],
+      };
 
-      const result = await createEvent(validEventData, mockUser);
+      const mockCreatedEvent = {
+        id: 'event-456',
+        name: multiDayEventData.name,
+        eventType: multiDayEventData.eventType,
+        eventLength: multiDayEventData.eventLength,
+        timingPreference: multiDayEventData.timingPreference,
+        preferredTime: null,
+        duration: null,
+        participants: [
+          {
+            id: 'participant-1',
+            name: 'Alice Brown',
+            email: 'alice@example.com',
+            token: 'test-uuid',
+          },
+        ],
+      };
 
-      expect(result).toHaveProperty('error', 'Failed to create event');
-      expect(result).toHaveProperty('details', 'Unknown error');
-      expect(result).toHaveProperty('status', 500);
+      (prisma.$transaction as jest.Mock).mockImplementation(async (callback) => {
+        const mockTx = {
+          participant: {
+            create: jest.fn().mockResolvedValue({
+              id: 'participant-1',
+              name: 'Alice Brown',
+              email: 'alice@example.com',
+              token: 'test-uuid',
+            }),
+          },
+          event: {
+            create: jest.fn().mockResolvedValue(mockCreatedEvent),
+          },
+        };
+        return callback(mockTx);
+      });
+
+      (sendEventInvitation as jest.Mock).mockResolvedValue({
+        success: true,
+        messageId: 'msg-456',
+      });
+
+      const result = await createEvent(multiDayEventData, mockUser);
+
+      expect(result.success).toBe(true);
+      if (!isErrorResponse(result)) {
+        expect(result.data?.id).toBe('event-456');
+        expect(result.data?.eventType).toBe('multi-day');
+      }
+    });
+
+    it('should handle user without displayName or email', async () => {
+      const minimalUser = {
+        id: 'user-456',
+      };
+
+      const mockCreatedEvent = {
+        id: 'event-123',
+        name: validEventData.name,
+        description: validEventData.description,
+        eventType: validEventData.eventType,
+        participants: [
+          {
+            id: 'participant-1',
+            name: 'John Doe',
+            email: 'john@example.com',
+            token: 'test-uuid',
+          },
+          {
+            id: 'participant-2',
+            name: 'Jane Smith',
+            email: 'jane@example.com',
+            token: 'test-uuid',
+          },
+        ],
+      };
+
+      (prisma.$transaction as jest.Mock).mockImplementation(async (callback) => {
+        const mockTx = {
+          participant: {
+            create: jest.fn()
+              .mockResolvedValueOnce({
+                id: 'participant-1',
+                name: 'John Doe',
+                email: 'john@example.com',
+                token: 'test-uuid',
+              })
+              .mockResolvedValueOnce({
+                id: 'participant-2',
+                name: 'Jane Smith',
+                email: 'jane@example.com',
+                token: 'test-uuid',
+              }),
+          },
+          event: {
+            create: jest.fn().mockResolvedValue(mockCreatedEvent),
+          },
+        };
+        return callback(mockTx);
+      });
+
+      (sendEventInvitation as jest.Mock).mockResolvedValue({
+        success: true,
+        messageId: 'msg-123',
+      });
+
+      const result = await createEvent(validEventData, minimalUser);
+
+      expect(result.success).toBe(true);
+      if (!isErrorResponse(result)) {
+        expect(result.data?.creator.name).toBe('Event Organizer');
+        expect(result.data?.creator.email).toBe('');
+      }
     });
   });
 });

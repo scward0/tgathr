@@ -1,5 +1,6 @@
 // Import only the service layer for testing
 import * as eventService from '@/lib/services/event-service';
+import { isErrorResponse } from '@/lib/types/service-responses';
 
 // Don't mock the service - test it directly
 // This provides real coverage of the service functions
@@ -22,8 +23,11 @@ describe('Events API Route', () => {
       const invalidData = { name: 'Te' }; // Too short
       const result = eventService.validateEventData(invalidData);
 
-      expect(result).toHaveProperty('error', 'Validation error');
-      expect(result).toHaveProperty('status', 400);
+      expect(result.success).toBe(false);
+      if (isErrorResponse(result)) {
+        expect(result.error).toBe('Validation error');
+        expect(result.status).toBe(400);
+      }
     });
 
     it('should validate valid event data', () => {
@@ -41,8 +45,10 @@ describe('Events API Route', () => {
 
       const result = eventService.validateEventData(validData);
 
-      expect(result).not.toHaveProperty('error');
-      expect(result).toHaveProperty('name', 'Test Event');
+      expect(result.success).toBe(true);
+      if (!isErrorResponse(result)) {
+        expect(result.data?.name).toBe('Test Event');
+      }
     });
   });
 });
