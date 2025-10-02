@@ -85,6 +85,7 @@ export function EventForm() {
           {...register('name')}
           type="text"
           id="name"
+          data-testid="event-name"
           className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md shadow-sm text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
           placeholder="Enter event name"
         />
@@ -101,6 +102,7 @@ export function EventForm() {
         <textarea
           {...register('description')}
           id="description"
+          data-testid="event-description"
           rows={3}
           className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md shadow-sm text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors resize-none"
           placeholder="Enter event description"
@@ -130,6 +132,7 @@ export function EventForm() {
               {...register('eventType')}
               type="radio"
               value="multi-day"
+              data-testid="event-type-multi-day"
               className="w-4 h-4 text-blue-600 bg-gray-800 border-gray-600 focus:ring-blue-500 focus:ring-2"
             />
             <span className="text-white">Multi-Day Event (vacation, trip, retreat)</span>
@@ -150,13 +153,14 @@ export function EventForm() {
             {...register('availabilityStartDate', { valueAsDate: true })}
             type="date"
             id="availabilityStartDate"
+            data-testid="availability-start-date"
             className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md shadow-sm text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors [&::-webkit-calendar-picker-indicator]:invert"
           />
           {errors.availabilityStartDate && (
             <p className="text-sm text-red-400">{errors.availabilityStartDate.message}</p>
           )}
         </div>
-        
+
         <div className="space-y-2">
           <label htmlFor="availabilityEndDate" className="block text-sm font-medium text-gray-300">
             Availability Window End
@@ -165,6 +169,7 @@ export function EventForm() {
             {...register('availabilityEndDate', { valueAsDate: true })}
             type="date"
             id="availabilityEndDate"
+            data-testid="availability-end-date"
             className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md shadow-sm text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors [&::-webkit-calendar-picker-indicator]:invert"
           />
           {errors.availabilityEndDate && (
@@ -186,6 +191,7 @@ export function EventForm() {
               <select
                 {...register('preferredTime')}
                 id="preferredTime"
+                data-testid="preferred-time"
                 className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
               >
                 <option value="">Select time...</option>
@@ -206,6 +212,7 @@ export function EventForm() {
               <select
                 {...register('duration')}
                 id="duration"
+                data-testid="duration"
                 className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
               >
                 <option value="">Select duration...</option>
@@ -236,6 +243,7 @@ export function EventForm() {
               <select
                 {...register('eventLength')}
                 id="eventLength"
+                data-testid="event-length"
                 className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
               >
                 <option value="">Select length...</option>
@@ -256,6 +264,7 @@ export function EventForm() {
               <select
                 {...register('timingPreference')}
                 id="timingPreference"
+                data-testid="timing-preference"
                 className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
               >
                 <option value="">Select preference...</option>
@@ -280,6 +289,7 @@ export function EventForm() {
           <button
             type="button"
             onClick={() => append({ name: '', email: '', phoneNumber: '' })}
+            data-testid="add-participant"
             className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-blue-400 hover:text-blue-300 transition-colors"
           >
             + Add Participant
@@ -295,6 +305,7 @@ export function EventForm() {
                   <button
                     type="button"
                     onClick={() => remove(index)}
+                    data-testid={`remove-participant-${index}`}
                     aria-label={`Remove participant ${index + 1}`}
                     className="text-red-400 hover:text-red-300 transition-colors text-sm"
                   >
@@ -311,6 +322,7 @@ export function EventForm() {
                   <input
                     {...register(`participants.${index}.name`)}
                     id={`participant-${index}-name`}
+                    data-testid={`participant-${index}-name`}
                     type="text"
                     placeholder="Name"
                     className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
@@ -329,6 +341,7 @@ export function EventForm() {
                   <input
                     {...register(`participants.${index}.email`)}
                     id={`participant-${index}-email`}
+                    data-testid={`participant-${index}-email`}
                     type="email"
                     placeholder="email@example.com"
                     className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
@@ -368,6 +381,7 @@ export function EventForm() {
         <button
           type="submit"
           disabled={isSubmitting}
+          data-testid="submit-button"
           className="w-full md:w-auto px-6 py-3 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           {isSubmitting ? 'Creating Event...' : 'Create Event'}

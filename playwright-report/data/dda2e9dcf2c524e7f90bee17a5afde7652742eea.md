@@ -1,0 +1,79 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - navigation [ref=e3]:
+      - link "tgathr" [ref=e4] [cursor=pointer]:
+        - /url: /
+      - link "← Back to Dashboard" [ref=e5] [cursor=pointer]:
+        - /url: /
+    - generic [ref=e7]:
+      - heading "Create New Event" [level=1] [ref=e8]
+      - generic [ref=e9]:
+        - generic [ref=e10]:
+          - generic [ref=e11]: Event Name
+          - textbox "Event Name" [active] [ref=e12]
+          - paragraph [ref=e13]: Event name must be at least 3 characters
+        - generic [ref=e14]:
+          - generic [ref=e15]: Description (Optional)
+          - textbox "Description (Optional)" [ref=e16]
+        - group "Event Type" [ref=e17]:
+          - generic [ref=e18]: Event Type
+          - generic [ref=e19]:
+            - generic [ref=e20] [cursor=pointer]:
+              - radio "Single Day Event (party, dinner, meeting)" [checked] [ref=e21]
+              - generic [ref=e22] [cursor=pointer]: Single Day Event (party, dinner, meeting)
+            - generic [ref=e23] [cursor=pointer]:
+              - radio "Multi-Day Event (vacation, trip, retreat)" [ref=e24]
+              - generic [ref=e25] [cursor=pointer]: Multi-Day Event (vacation, trip, retreat)
+        - generic [ref=e26]:
+          - generic [ref=e27]:
+            - generic [ref=e28]: Availability Window Start
+            - textbox "Availability Window Start" [ref=e29]
+            - paragraph [ref=e30]: Invalid date
+          - generic [ref=e31]:
+            - generic [ref=e32]: Availability Window End
+            - textbox "Availability Window End" [ref=e33]
+            - paragraph [ref=e34]: Invalid date
+        - generic [ref=e35]:
+          - heading "Single Day Event Details" [level=3] [ref=e36]
+          - generic [ref=e37]:
+            - generic [ref=e38]:
+              - generic [ref=e39]: Preferred Time
+              - combobox "Preferred Time" [ref=e40]:
+                - option "Select time..." [selected]
+                - option "Morning (8 AM - 12 PM)"
+                - option "Afternoon (12 PM - 5 PM)"
+                - option "Evening (5 PM - 10 PM)"
+                - option "All Day"
+            - generic [ref=e41]:
+              - generic [ref=e42]: Duration
+              - combobox "Duration" [ref=e43]:
+                - option "Select duration..." [selected]
+                - option "1 Hour"
+                - option "2 Hours"
+                - option "3 Hours"
+                - option "4 Hours"
+                - option "All Day"
+        - generic [ref=e44]:
+          - generic [ref=e45]:
+            - generic [ref=e46]: Participants
+            - button "+ Add Participant" [ref=e47]
+          - generic [ref=e49]:
+            - generic [ref=e51]: Participant 1
+            - generic [ref=e52]:
+              - generic [ref=e53]:
+                - generic [ref=e54]: Participant 1 Name
+                - textbox "Participant 1 Name" [ref=e55]
+                - paragraph [ref=e56]: Name is required
+              - generic [ref=e57]:
+                - generic [ref=e58]: Participant 1 Email
+                - textbox "Participant 1 Email" [ref=e59]
+                - paragraph [ref=e60]: Please enter a valid email address
+              - generic [ref=e61]:
+                - generic [ref=e62]: Participant 1 Phone
+                - textbox "Participant 1 Phone" [ref=e63]
+        - button "Create Event" [ref=e65]
+  - alert [ref=e66]
+```
