@@ -45,23 +45,28 @@ export async function GET(request: Request, { params }: RouteParams) {
     ).length;
 
     // Group time slots by time for overlap analysis
-    const timeSlotMap = new Map<string, number>();
-    event.participants.forEach((participant: { timeSlots: any[] }) => {
+    const timeSlotMap = new Map<string, { count: number; participantNames: string[] }>();
+    event.participants.forEach((participant: { name: string; timeSlots: any[] }) => {
       participant.timeSlots.forEach((slot: { startTime: Date; endTime: Date }) => {
         const timeKey = `${slot.startTime.toISOString()}-${slot.endTime.toISOString()}`;
-        timeSlotMap.set(timeKey, (timeSlotMap.get(timeKey) || 0) + 1);
+        const existing = timeSlotMap.get(timeKey) || { count: 0, participantNames: [] };
+        timeSlotMap.set(timeKey, {
+          count: existing.count + 1,
+          participantNames: [...existing.participantNames, participant.name]
+        });
       });
     });
 
     // Convert to array and sort by popularity
     const popularTimes = Array.from(timeSlotMap.entries())
-      .map(([timeKey, count]) => {
+      .map(([timeKey, data]) => {
         const [startTime, endTime] = timeKey.split('-');
         return {
           startTime: new Date(startTime),
           endTime: new Date(endTime),
-          participantCount: count,
-          percentage: Math.round((count / totalParticipants) * 100),
+          participantCount: data.count,
+          participantNames: data.participantNames,
+          percentage: Math.round((data.count / totalParticipants) * 100),
         };
       })
       .sort((a, b) => b.participantCount - a.participantCount);
