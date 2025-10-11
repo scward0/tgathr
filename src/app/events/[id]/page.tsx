@@ -261,7 +261,7 @@ export default function EventDashboard({ params }: DashboardPageProps) {
 
                     {/* Available participants */}
                     <div className="flex flex-wrap gap-1">
-                      {timeSlot.participantNames.map((name: string, nameIndex: number) => (
+                      {timeSlot.participantNames?.map((name: string, nameIndex: number) => (
                         <span
                           key={nameIndex}
                           className="text-xs bg-gray-600 text-gray-200 px-2 py-1 rounded"
@@ -349,8 +349,8 @@ export default function EventDashboard({ params }: DashboardPageProps) {
                     <div className="flex flex-wrap gap-2 mb-4">
                       <div className="flex flex-wrap gap-1">
                         <span className="text-xs text-gray-400">Available:</span>
-                        {rec.participantNames.map((name: string, nameIndex: number) => (
-                          <span 
+                        {rec.participantNames?.map((name: string, nameIndex: number) => (
+                          <span
                             key={nameIndex}
                             className="text-xs bg-green-800 text-green-200 px-2 py-1 rounded"
                           >
@@ -358,12 +358,12 @@ export default function EventDashboard({ params }: DashboardPageProps) {
                           </span>
                         ))}
                       </div>
-                      
-                      {rec.conflictParticipants.length > 0 && (
+
+                      {rec.conflictParticipants && rec.conflictParticipants.length > 0 && (
                         <div className="flex flex-wrap gap-1">
                           <span className="text-xs text-gray-400">Conflicts:</span>
                           {rec.conflictParticipants.map((name: string, nameIndex: number) => (
-                            <span 
+                            <span
                               key={nameIndex}
                               className="text-xs bg-red-800 text-red-200 px-2 py-1 rounded"
                             >
