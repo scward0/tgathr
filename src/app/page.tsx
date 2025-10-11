@@ -21,12 +21,17 @@ interface UserEvent {
   expiresAt: string;
 }
 
+type FilterType = 'all' | 'active' | 'finalized' | 'expired';
+type SortType = 'date' | 'name' | 'status';
+
 export default function Home() {
   const user = useUser();
   const [events, setEvents] = useState<UserEvent[]>([]);
   const [eventsLoading, setEventsLoading] = useState(false);
   const [debugInfo, setDebugInfo] = useState('Initializing...');
   const [loadingTimeout, setLoadingTimeout] = useState(false);
+  const [filter, setFilter] = useState<FilterType>('all');
+  const [sort, setSort] = useState<SortType>('date');
 
   useEffect(() => {
     console.log('User state changed:', user);
@@ -68,6 +73,68 @@ export default function Home() {
       console.error('Failed to fetch events:', error);
     } finally {
       setEventsLoading(false);
+    }
+  };
+
+  // Filter and sort events
+  const getFilteredAndSortedEvents = () => {
+    const now = new Date();
+
+    // Filter events
+    let filtered = events.filter(event => {
+      const isExpired = new Date(event.expiresAt) < now;
+
+      switch (filter) {
+        case 'active':
+          return !event.isFinalized && !isExpired;
+        case 'finalized':
+          return event.isFinalized;
+        case 'expired':
+          return isExpired;
+        case 'all':
+        default:
+          return true;
+      }
+    });
+
+    // Sort events
+    filtered.sort((a, b) => {
+      switch (sort) {
+        case 'name':
+          return a.name.localeCompare(b.name);
+        case 'status': {
+          // Sort by isFinalized first, then by response rate
+          if (a.isFinalized !== b.isFinalized) {
+            return a.isFinalized ? 1 : -1;
+          }
+          const rateA = a.participantCount > 0 ? a.respondedParticipants / a.participantCount : 0;
+          const rateB = b.participantCount > 0 ? b.respondedParticipants / b.participantCount : 0;
+          return rateB - rateA;
+        }
+        case 'date':
+        default:
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      }
+    });
+
+    return filtered;
+  };
+
+  // Calculate response rate and color
+  const getResponseRateInfo = (event: UserEvent) => {
+    if (event.participantCount === 0) {
+      return { rate: 0, color: 'bg-gray-700 text-gray-300', label: '0%' };
+    }
+
+    const rate = event.respondedParticipants / event.participantCount;
+    const percentage = Math.round(rate * 100);
+
+    if (rate < 0.3) {
+      return { rate, color: 'bg-red-900 text-red-300', label: `${percentage}% responded` };
+    } else if (rate < 0.7) {
+      return { rate, color: 'bg-yellow-900 text-yellow-300', label: `${percentage}% responded` };
+    } else {
+      return { rate, color: 'bg-green-900 text-green-300', label: `${percentage}% responded` };
     }
   };
 
@@ -147,12 +214,74 @@ export default function Home() {
         <div className="mb-8">
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-2xl font-bold text-white">Your Events</h3>
-            <button 
+            <button
               onClick={fetchUserEvents}
               className="text-blue-400 hover:text-blue-300 text-sm"
             >
               Refresh
             </button>
+          </div>
+
+          {/* Filter and Sort Controls */}
+          <div className="mb-6 space-y-4">
+            {/* Filter Tabs */}
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => setFilter('all')}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  filter === 'all'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                }`}
+              >
+                All
+              </button>
+              <button
+                onClick={() => setFilter('active')}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  filter === 'active'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                }`}
+              >
+                Active
+              </button>
+              <button
+                onClick={() => setFilter('finalized')}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  filter === 'finalized'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                }`}
+              >
+                Finalized
+              </button>
+              <button
+                onClick={() => setFilter('expired')}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  filter === 'expired'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                }`}
+              >
+                Expired
+              </button>
+            </div>
+
+            {/* Sort Dropdown */}
+            <div className="flex items-center gap-2">
+              <label htmlFor="sort" className="text-sm text-gray-400">Sort by:</label>
+              <select
+                id="sort"
+                value={sort}
+                onChange={(e) => setSort(e.target.value as SortType)}
+                className="px-3 py-2 bg-gray-800 text-gray-300 rounded-md text-sm border border-gray-700 focus:outline-none focus:border-blue-500"
+              >
+                <option value="date">Date</option>
+                <option value="name">Name</option>
+                <option value="status">Status</option>
+              </select>
+            </div>
           </div>
 
           {eventsLoading ? (
@@ -162,53 +291,65 @@ export default function Home() {
           ) : events.length === 0 ? (
             <div className="text-center py-12 bg-gray-800 rounded-lg">
               <p className="text-gray-400 mb-4">You haven&apos;t created any events yet.</p>
-              <Link 
+              <Link
                 href="/events/new"
                 className="text-blue-400 hover:text-blue-300"
               >
                 Create your first event →
               </Link>
             </div>
+          ) : getFilteredAndSortedEvents().length === 0 ? (
+            <div className="text-center py-12 bg-gray-800 rounded-lg">
+              <p className="text-gray-400">No events match the selected filter.</p>
+            </div>
           ) : (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {events.map((event) => (
-                <div key={event.id} className="bg-gray-800 rounded-lg p-6 hover:bg-gray-750 transition-colors">
-                  <div className="mb-4">
-                    <h4 className="text-lg font-semibold text-white mb-2">{event.name}</h4>
-                    {event.description && (
-                      <p className="text-gray-400 text-sm mb-3">{event.description}</p>
-                    )}
-                    <div className="flex items-center gap-2 text-xs text-gray-500">
-                      <span className={`px-2 py-1 rounded ${event.eventType === 'single-day' ? 'bg-green-900 text-green-300' : 'bg-blue-900 text-blue-300'}`}>
-                        {event.eventType}
-                      </span>
-                      <span className={`px-2 py-1 rounded ${
-                        event.isFinalized 
-                          ? 'bg-purple-900 text-purple-300' 
-                          : event.allResponded 
-                            ? 'bg-green-900 text-green-300' 
-                            : 'bg-yellow-900 text-yellow-300'
-                      }`}>
-                        {event.isFinalized ? 'Finalized' : event.allResponded ? 'Ready to finalize' : 'Collecting responses'}
-                      </span>
-                    </div>
-                  </div>
-                  
-                  <div className="text-sm text-gray-400 space-y-1 mb-4">
-                    <div>Participants: {event.participantCount}</div>
-                    <div>Responses: {event.respondedParticipants}/{event.participantCount}</div>
-                    <div>Created: {new Date(event.createdAt).toLocaleDateString()}</div>
-                    <div>Expires: {new Date(event.expiresAt).toLocaleDateString()}</div>
-                  </div>
+            <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+              {getFilteredAndSortedEvents().map((event) => {
+                const responseRateInfo = getResponseRateInfo(event);
+                const isExpired = new Date(event.expiresAt) < new Date();
 
-                  <Link 
-                    href={`/events/${event.id}`}
-                    className="block text-center bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded text-sm transition-colors"
-                  >
-                    View Event
-                  </Link>
-                </div>
-              ))}
+                return (
+                  <div key={event.id} className="bg-gray-800 rounded-lg p-6 hover:bg-gray-750 transition-colors">
+                    <div className="mb-4">
+                      <h4 className="text-lg font-semibold text-white mb-2">{event.name}</h4>
+                      {event.description && (
+                        <p className="text-gray-400 text-sm mb-3">{event.description}</p>
+                      )}
+                      <div className="flex flex-wrap items-center gap-2 text-xs">
+                        <span className={`px-2 py-1 rounded ${event.eventType === 'single-day' ? 'bg-green-900 text-green-300' : 'bg-blue-900 text-blue-300'}`}>
+                          {event.eventType}
+                        </span>
+                        {event.isFinalized ? (
+                          <span className="px-2 py-1 rounded bg-purple-900 text-purple-300">
+                            Finalized
+                          </span>
+                        ) : isExpired ? (
+                          <span className="px-2 py-1 rounded bg-gray-700 text-gray-300">
+                            Expired
+                          </span>
+                        ) : null}
+                        <span className={`px-2 py-1 rounded ${responseRateInfo.color}`}>
+                          {responseRateInfo.label}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="text-sm text-gray-400 space-y-1 mb-4">
+                      <div>Participants: {event.participantCount}</div>
+                      <div>Responses: {event.respondedParticipants}/{event.participantCount}</div>
+                      <div>Created: {new Date(event.createdAt).toLocaleDateString()}</div>
+                      <div>Expires: {new Date(event.expiresAt).toLocaleDateString()}</div>
+                    </div>
+
+                    <Link
+                      href={`/events/${event.id}`}
+                      className="block text-center bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded text-sm transition-colors"
+                    >
+                      View Event
+                    </Link>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
