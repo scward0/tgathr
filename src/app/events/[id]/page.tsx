@@ -15,29 +15,44 @@ export default function EventDashboard({ params }: DashboardPageProps) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [finalizing, setFinalizing] = useState(false);
-  const [expandedParticipants, setExpandedParticipants] = useState<Set<string>>(new Set()); // Add this line
+  const [expandedParticipants, setExpandedParticipants] = useState<Set<string>>(new Set());
 
-
-  // Fetch event data on component mount
-  useEffect(() => {
-    async function fetchEventData() {
-      try {
-        const response = await fetch(`/api/events/${params.id}`);
-        if (!response.ok) {
-          notFound();
-        }
-        const eventData = await response.json();
-        setData(eventData);
-      } catch (error) {
-        console.error('Error fetching event data:', error);
+  // Fetch event data function
+  const fetchEventData = async () => {
+    try {
+      const response = await fetch(`/api/events/${params.id}`);
+      if (!response.ok) {
         notFound();
-      } finally {
-        setLoading(false);
       }
+      const eventData = await response.json();
+      setData(eventData);
+      return eventData;
+    } catch (_error) {
+      if (loading) {
+        notFound();
+      }
+    } finally {
+      setLoading(false);
     }
+  };
 
+  // Initial fetch on component mount
+  useEffect(() => {
     fetchEventData();
   }, [params.id]);
+
+  // Real-time updates: Poll every 30 seconds for new responses
+  useEffect(() => {
+    if (!data || data.event?.isFinalized) {
+      return; // Don't poll if no data yet or event is finalized
+    }
+
+    const pollInterval = setInterval(() => {
+      fetchEventData();
+    }, 30000); // Poll every 30 seconds
+
+    return () => clearInterval(pollInterval);
+  }, [data, params.id]);
 
   // Handle event finalization
   const handleFinalize = async (startTime: string, endTime: string, participantNames: string[]) => {
@@ -64,14 +79,12 @@ export default function EventDashboard({ params }: DashboardPageProps) {
         throw new Error('Failed to finalize event');
       }
 
-      const result = await response.json();
-      console.log('Event finalized:', result);
-      
+      await response.json();
+
       // Refresh the data to show finalized state
       window.location.reload();
-      
-    } catch (error) {
-      console.error('Error finalizing event:', error);
+
+    } catch (_error) {
       alert('Failed to finalize event. Please try again.');
     } finally {
       setFinalizing(false);
@@ -123,7 +136,11 @@ export default function EventDashboard({ params }: DashboardPageProps) {
               </p>
             </div>
             <div className="text-right">
-              <div className="text-2xl font-bold text-blue-400">
+              <div className={`text-2xl font-bold ${
+                stats.responseRate < 30 ? 'text-red-400' :
+                stats.responseRate < 70 ? 'text-yellow-400' :
+                'text-green-400'
+              }`}>
                 {stats.responseRate}%
               </div>
               <div className="text-sm text-gray-400">
@@ -180,6 +197,95 @@ export default function EventDashboard({ params }: DashboardPageProps) {
             <div className="text-sm text-gray-400">Best Overlap</div>
           </div>
         </div>
+
+        {/* Most Popular Times */}
+        {data.popularTimes && data.popularTimes.length > 0 ? (
+          <div className="mb-8 bg-gray-800 rounded-lg p-6">
+            <h2 className="text-xl font-semibold text-white mb-4">
+              ⭐ Most Popular Times
+            </h2>
+            <div className="space-y-3">
+              {data.popularTimes.slice(0, 5).map((timeSlot: {
+                startTime: string;
+                endTime: string;
+                participantCount: number;
+                participantNames: string[];
+              }, index: number) => {
+                const popularityPercent = (timeSlot.participantCount / stats.totalParticipants) * 100;
+
+                return (
+                  <div
+                    key={index}
+                    className="bg-gray-700 rounded-lg p-4"
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="flex-1">
+                        <div className="font-medium text-white flex items-center gap-2">
+                          <span className="text-gray-400">#{index + 1}</span>
+                          {event.eventType === 'single-day'
+                            ? format(new Date(timeSlot.startTime), 'EEEE, MMM d')
+                            : `${format(new Date(timeSlot.startTime), 'MMM d')} - ${format(new Date(timeSlot.endTime), 'MMM d')}`
+                          }
+                        </div>
+                        {event.eventType === 'single-day' && (
+                          <div className="text-sm text-gray-300">
+                            {format(new Date(timeSlot.startTime), 'h:mm a')} - {format(new Date(timeSlot.endTime), 'h:mm a')}
+                          </div>
+                        )}
+                      </div>
+                      <div className="text-right">
+                        <div className={`text-lg font-bold ${
+                          popularityPercent >= 70 ? 'text-green-400' :
+                          popularityPercent >= 50 ? 'text-yellow-400' :
+                          'text-gray-400'
+                        }`}>
+                          {timeSlot.participantCount}/{stats.totalParticipants}
+                        </div>
+                        <div className="text-xs text-gray-400">
+                          {Math.round(popularityPercent)}% available
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Progress bar */}
+                    <div className="w-full bg-gray-600 rounded-full h-2 mb-3">
+                      <div
+                        className={`h-2 rounded-full transition-all ${
+                          popularityPercent >= 70 ? 'bg-green-400' :
+                          popularityPercent >= 50 ? 'bg-yellow-400' :
+                          'bg-gray-400'
+                        }`}
+                        style={{ width: `${popularityPercent}%` }}
+                      />
+                    </div>
+
+                    {/* Available participants */}
+                    <div className="flex flex-wrap gap-1">
+                      {timeSlot.participantNames.map((name: string, nameIndex: number) => (
+                        <span
+                          key={nameIndex}
+                          className="text-xs bg-gray-600 text-gray-200 px-2 py-1 rounded"
+                        >
+                          {name}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ) : (
+          <div className="mb-8 bg-gray-800 rounded-lg p-6">
+            <h2 className="text-xl font-semibold text-white mb-4">
+              ⭐ Most Popular Times
+            </h2>
+            <div className="text-center py-8 text-gray-400">
+              <p>📊 No data yet</p>
+              <p className="text-sm mt-1">Popular times will appear once participants start responding</p>
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Smart Algorithm Recommendations */}
@@ -411,8 +517,6 @@ export default function EventDashboard({ params }: DashboardPageProps) {
             </div>
           </div>
         </div>
-
-  
 
         {/* Event Details */}
         <div className="mt-8 bg-gray-800 rounded-lg p-6">

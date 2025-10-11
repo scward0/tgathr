@@ -34,13 +34,8 @@ export default function Home() {
   const [sort, setSort] = useState<SortType>('date');
 
   useEffect(() => {
-    console.log('User state changed:', user);
-    console.log('User properties:', user ? Object.keys(user) : 'No user');
-    console.log('User displayName:', user?.displayName);
-    console.log('User primaryEmail:', user?.primaryEmail);
-    console.log('User id:', user?.id);
     setDebugInfo(`User state: ${user ? 'authenticated' : 'not authenticated'}`);
-    
+
     if (user) {
       fetchUserEvents();
     }
@@ -50,7 +45,6 @@ export default function Home() {
   useEffect(() => {
     const timer = setTimeout(() => {
       if (user === undefined) {
-        console.log('Loading timeout reached, showing fallback');
         setLoadingTimeout(true);
       }
     }, 5000); // 5 second timeout
@@ -69,8 +63,8 @@ export default function Home() {
         const data = await response.json();
         setEvents(data.events);
       }
-    } catch (error) {
-      console.error('Failed to fetch events:', error);
+    } catch (_error) {
+      // Error fetching events - silently fail
     } finally {
       setEventsLoading(false);
     }
@@ -81,7 +75,7 @@ export default function Home() {
     const now = new Date();
 
     // Filter events
-    let filtered = events.filter(event => {
+    const filtered = events.filter(event => {
       const isExpired = new Date(event.expiresAt) < now;
 
       switch (filter) {
@@ -152,9 +146,7 @@ export default function Home() {
   }
 
   // If loading timeout reached, show the login page anyway
-  if (user === undefined && loadingTimeout) {
-    console.log('Treating timeout as not authenticated');
-  }
+  // (No action needed, just fall through to render)
 
   if (user === null || (user === undefined && loadingTimeout)) {
     // Not logged in - show landing page
