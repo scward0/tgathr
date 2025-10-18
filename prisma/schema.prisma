@@ -42,6 +42,7 @@ model Event {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   expiresAt DateTime // Set to 30 days from creation in API
+  notificationSentAt DateTime? // Track when expiration notification was sent
   
   // Relationships - creatorId references Neon Auth user ID
   creatorId    String  // References neon_auth.users_sync.id
