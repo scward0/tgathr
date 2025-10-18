@@ -193,33 +193,29 @@ import {
      * Find optimal time slots for a specific day
      */
     private findOptimalTimeSlotsForDay(
-      day: Date, 
-      availability: TimeSlot[], 
+      day: Date,
+      availability: TimeSlot[],
       durationInMinutes: number
     ): RecommendedTime[] {
       const recommendations: RecommendedTime[] = [];
-      
+
       // Group overlapping availability
       const timeWindows = this.findOverlappingTimeWindows(availability, durationInMinutes);
-      
+
       for (const window of timeWindows) {
-        // Apply preferred time filter if specified
-        if (this.event.preferredTime && this.event.preferredTime !== 'all-day') {
-          if (!this.isTimeInPreferredRange(window.startTime)) {
-            continue;
-          }
-        }
-  
+        // Don't filter by preferred time - instead rely on scoring to prioritize matching times
+        // This ensures we always show recommendations when availability exists
+
         const score = this.calculateSingleDayScore(window);
         const reasoning = this.generateSingleDayReasoning(window);
-        
+
         recommendations.push({
           ...window,
           score,
           reasoning
         });
       }
-      
+
       return recommendations;
     }
   
