@@ -168,29 +168,29 @@ export default function EventDashboard({ params }: DashboardPageProps) {
         </div>
 
         {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
           <div className="bg-gray-800 rounded-lg p-4">
             <div className="text-2xl font-bold text-white">
               {stats.totalParticipants}
             </div>
             <div className="text-sm text-gray-400">Total Invited</div>
           </div>
-          
+
           <div className="bg-gray-800 rounded-lg p-4">
             <div className="text-2xl font-bold text-green-400">
               {stats.respondedParticipants}
             </div>
             <div className="text-sm text-gray-400">Responded</div>
           </div>
-          
+
           <div className="bg-gray-800 rounded-lg p-4">
             <div className="text-2xl font-bold text-yellow-400">
               {stats.totalParticipants - stats.respondedParticipants}
             </div>
             <div className="text-sm text-gray-400">Pending</div>
           </div>
-          
-          <div className="bg-gray-800 rounded-lg p-4">
+
+          <div className="bg-gray-800 rounded-lg p-4 hidden">
             <div className="text-2xl font-bold text-blue-400">
               {data.popularTimes && data.popularTimes.length > 0 ? data.popularTimes[0].participantCount : 0}
             </div>
@@ -431,7 +431,7 @@ export default function EventDashboard({ params }: DashboardPageProps) {
 
         {/* Most Popular Times */}
         {data.popularTimes && data.popularTimes.length > 0 ? (
-          <div className="mt-8 bg-gray-800 rounded-lg p-6">
+          <div className="mt-8 bg-gray-800 rounded-lg p-6 hidden">
             <h2 className="text-xl font-semibold text-white mb-4">
               ⭐ Most Popular Times
             </h2>
@@ -507,7 +507,7 @@ export default function EventDashboard({ params }: DashboardPageProps) {
             </div>
           </div>
         ) : (
-          <div className="mt-8 bg-gray-800 rounded-lg p-6">
+          <div className="mt-8 bg-gray-800 rounded-lg p-6 hidden">
             <h2 className="text-xl font-semibold text-white mb-4">
               ⭐ Most Popular Times
             </h2>
