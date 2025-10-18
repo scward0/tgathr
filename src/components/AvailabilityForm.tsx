@@ -63,7 +63,7 @@ export function AvailabilityForm({ event, participant }: AvailabilityFormProps) 
     setSelectedSlots(prev => {
       // Handle different time slot formats
       let startTime: string, endTime: string;
-      
+
       if (timeSlot === 'all-day') {
         // For multi-day events
         startTime = '09:00';
@@ -76,17 +76,19 @@ export function AvailabilityForm({ event, participant }: AvailabilityFormProps) 
         startTime = '09:00';
         endTime = '17:00';
       }
-  
-      const existing = prev.find(slot => 
-        format(slot.date, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd') && 
-        slot.startTime === startTime
+
+      const existing = prev.find(slot =>
+        format(slot.date, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd') &&
+        slot.startTime === startTime &&
+        slot.endTime === endTime
       );
-  
+
       if (existing) {
         // Remove the slot
-        return prev.filter(slot => 
-          !(format(slot.date, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd') && 
-            slot.startTime === startTime)
+        return prev.filter(slot =>
+          !(format(slot.date, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd') &&
+            slot.startTime === startTime &&
+            slot.endTime === endTime)
         );
       } else {
         // Add the slot
@@ -101,19 +103,22 @@ export function AvailabilityForm({ event, participant }: AvailabilityFormProps) 
   };
 
 const isSlotSelected = (date: Date, timeSlot: string) => {
-  let startTime: string;
-  
+  let startTime: string, endTime: string;
+
   if (timeSlot === 'all-day') {
     startTime = '09:00';
+    endTime = '17:00';
   } else if (timeSlot.includes('-')) {
-    [startTime] = timeSlot.split('-');
+    [startTime, endTime] = timeSlot.split('-');
   } else {
     startTime = '09:00';
+    endTime = '17:00';
   }
-  
-  return selectedSlots.some(slot => 
-    format(slot.date, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd') && 
-    slot.startTime === startTime
+
+  return selectedSlots.some(slot =>
+    format(slot.date, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd') &&
+    slot.startTime === startTime &&
+    slot.endTime === endTime
   );
 };
 
