@@ -14,15 +14,63 @@ interface UserEvent {
   availabilityStartDate: string;
   availabilityEndDate: string;
   isFinalized: boolean;
+  finalStartDate?: string | null;
+  finalEndDate?: string | null;
   participantCount: number;
   respondedParticipants: number;
   allResponded: boolean;
   createdAt: string;
   expiresAt: string;
+  finalizedAt?: string | null;
+  daysSinceFinalized?: number | null;
 }
 
 type FilterType = 'all' | 'active' | 'finalized' | 'expired';
 type SortType = 'date' | 'name' | 'status';
+
+// Helper functions for date formatting
+function formatDateTime(dateString: string): string {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit'
+  });
+}
+
+function formatDate(dateString: string): string {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  });
+}
+
+function getRelativeTime(days: number | null | undefined): string {
+  if (days === null || days === undefined) {
+    return '';
+  }
+  if (days === 0) {
+    return 'Today';
+  }
+  if (days === 1) {
+    return 'Yesterday';
+  }
+  if (days < 7) {
+    return `${days} days ago`;
+  }
+  if (days < 30) {
+    return `${Math.floor(days / 7)} weeks ago`;
+  }
+  if (days < 365) {
+    return `${Math.floor(days / 30)} months ago`;
+  }
+  return `${Math.floor(days / 365)} years ago`;
+}
 
 export default function Home() {
   const user = useUser();
@@ -93,6 +141,11 @@ export default function Home() {
 
     // Sort events
     filtered.sort((a, b) => {
+      // Special sorting for finalized events when finalized filter is active
+      if (filter === 'finalized' && a.finalizedAt && b.finalizedAt) {
+        return new Date(b.finalizedAt).getTime() - new Date(a.finalizedAt).getTime();
+      }
+
       switch (sort) {
         case 'name':
           return a.name.localeCompare(b.name);
@@ -326,16 +379,44 @@ export default function Home() {
                       </div>
                     </div>
 
-                    <div className="text-sm text-gray-400 space-y-1 mb-4">
-                      <div>Participants: {event.participantCount}</div>
-                      <div>Responses: {event.respondedParticipants}/{event.participantCount}</div>
-                      <div>Created: {new Date(event.createdAt).toLocaleDateString()}</div>
-                      <div>Expires: {new Date(event.expiresAt).toLocaleDateString()}</div>
-                    </div>
+                    {/* Finalized Event History Section */}
+                    {event.isFinalized && event.finalStartDate ? (
+                      <div className="mt-3 p-3 bg-green-900/20 border border-green-700 rounded-md">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-green-400 font-semibold">✅ Completed</span>
+                          {event.daysSinceFinalized !== null && event.daysSinceFinalized !== undefined && (
+                            <span className="text-xs text-gray-400">
+                              {getRelativeTime(event.daysSinceFinalized)}
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-sm text-green-200 mb-2">
+                          <div className="font-medium">Final Date:</div>
+                          <div>
+                            {event.eventType === 'single-day'
+                              ? formatDateTime(event.finalStartDate)
+                              : event.finalEndDate
+                                ? `${formatDate(event.finalStartDate)} - ${formatDate(event.finalEndDate)}`
+                                : formatDate(event.finalStartDate)
+                            }
+                          </div>
+                        </div>
+                        <div className="text-xs text-gray-400">
+                          {event.respondedParticipants}/{event.participantCount} participants confirmed
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-sm text-gray-400 space-y-1 mb-4">
+                        <div>Participants: {event.participantCount}</div>
+                        <div>Responses: {event.respondedParticipants}/{event.participantCount}</div>
+                        <div>Created: {new Date(event.createdAt).toLocaleDateString()}</div>
+                        <div>Expires: {new Date(event.expiresAt).toLocaleDateString()}</div>
+                      </div>
+                    )}
 
                     <Link
                       href={`/events/${event.id}`}
-                      className="block text-center bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded text-sm transition-colors"
+                      className="block text-center bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded text-sm transition-colors mt-4"
                     >
                       View Event
                     </Link>

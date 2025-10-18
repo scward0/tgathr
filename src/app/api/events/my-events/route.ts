@@ -45,7 +45,12 @@ export async function GET(_request: Request) {
         const totalParticipants = event._count.participants;
         const respondedParticipants = event.participants.filter(p => p.timeSlots.length > 0).length;
         const allResponded = totalParticipants > 0 && respondedParticipants === totalParticipants;
-        
+
+        // Calculate days since finalized for history tracking
+        const daysSinceFinalized = event.isFinalized
+          ? Math.floor((Date.now() - event.updatedAt.getTime()) / (1000 * 60 * 60 * 24))
+          : null;
+
         return {
           id: event.id,
           name: event.name,
@@ -54,11 +59,15 @@ export async function GET(_request: Request) {
           availabilityStartDate: event.availabilityStartDate,
           availabilityEndDate: event.availabilityEndDate,
           isFinalized: event.isFinalized,
+          finalStartDate: event.finalStartDate,
+          finalEndDate: event.finalEndDate,
           participantCount: event._count.participants,
           respondedParticipants,
           allResponded,
           createdAt: event.createdAt,
-          expiresAt: event.expiresAt
+          expiresAt: event.expiresAt,
+          finalizedAt: event.isFinalized ? event.updatedAt : null,
+          daysSinceFinalized
         };
       })
     });
