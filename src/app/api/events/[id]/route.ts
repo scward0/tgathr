@@ -148,3 +148,61 @@ export async function GET(request: Request, { params }: RouteParams) {
     );
   }
 }
+
+export async function DELETE(request: Request, { params }: RouteParams) {
+  // During build time, just return a placeholder response
+  if (!process.env.DATABASE_URL) {
+    return NextResponse.json({ error: 'Database not available during build' }, { status: 503 });
+  }
+
+  try {
+    const { stackServerApp } = await import('@/lib/stack');
+    const { prisma } = await import('@/lib/prisma');
+
+    // Get the current user
+    const user = await stackServerApp.getUser();
+
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    // Check if event exists and user is the creator
+    const event = await prisma.event.findUnique({
+      where: { id: params.id },
+    });
+
+    if (!event) {
+      return NextResponse.json(
+        { error: 'Event not found' },
+        { status: 404 }
+      );
+    }
+
+    if (event.creatorId !== user.id) {
+      return NextResponse.json(
+        { error: 'Forbidden: You can only delete events you created' },
+        { status: 403 }
+      );
+    }
+
+    // Delete the event (this will cascade delete participants and time slots)
+    await prisma.event.delete({
+      where: { id: params.id },
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: 'Event deleted successfully',
+    });
+
+  } catch (error) {
+    console.error('Error deleting event:', error);
+    return NextResponse.json(
+      { error: 'Failed to delete event' },
+      { status: 500 }
+    );
+  }
+}

@@ -80,6 +80,8 @@ export default function Home() {
   const [loadingTimeout, setLoadingTimeout] = useState(false);
   const [filter, setFilter] = useState<FilterType>('all');
   const [sort, setSort] = useState<SortType>('date');
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{ id: string; name: string } | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     setDebugInfo(`User state: ${user ? 'authenticated' : 'not authenticated'}`);
@@ -115,6 +117,33 @@ export default function Home() {
       // Error fetching events - silently fail
     } finally {
       setEventsLoading(false);
+    }
+  };
+
+  const handleDeleteEvent = async () => {
+    if (!deleteConfirmation) {
+      return;
+    }
+
+    setDeleting(true);
+    try {
+      const response = await fetch(`/api/events/${deleteConfirmation.id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        // Remove the event from the local state
+        setEvents(events.filter(event => event.id !== deleteConfirmation.id));
+        setDeleteConfirmation(null);
+      } else {
+        const data = await response.json();
+        alert(`Failed to delete event: ${data.error || 'Unknown error'}`);
+      }
+    } catch (_error) {
+      alert('Failed to delete event. Please try again.');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -414,12 +443,21 @@ export default function Home() {
                       </div>
                     )}
 
-                    <Link
-                      href={`/events/${event.id}`}
-                      className="block text-center bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded text-sm transition-colors mt-4"
-                    >
-                      View Event
-                    </Link>
+                    <div className="flex gap-2 mt-4">
+                      <Link
+                        href={`/events/${event.id}`}
+                        className="flex-1 text-center bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded text-sm transition-colors"
+                      >
+                        View Event
+                      </Link>
+                      <button
+                        onClick={() => setDeleteConfirmation({ id: event.id, name: event.name })}
+                        className="bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded text-sm transition-colors"
+                        title="Delete event"
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </div>
                 );
               })}
@@ -427,6 +465,35 @@ export default function Home() {
           )}
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirmation && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-gray-800 rounded-lg p-6 max-w-md w-full">
+            <h3 className="text-xl font-bold text-white mb-4">Delete Event?</h3>
+            <p className="text-gray-300 mb-6">
+              Are you sure you want to delete &quot;{deleteConfirmation.name}&quot;? This action cannot be undone.
+              All participants and availability data will be permanently deleted.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeleteConfirmation(null)}
+                disabled={deleting}
+                className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteEvent}
+                disabled={deleting}
+                className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded transition-colors disabled:opacity-50"
+              >
+                {deleting ? 'Deleting...' : 'Delete Event'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
