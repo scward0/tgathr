@@ -7,7 +7,9 @@ import { isErrorResponse } from '@/lib/types/service-responses';
 // Mock dependencies
 jest.mock('@/lib/prisma', () => ({
   prisma: {
-    $transaction: jest.fn(),
+    event: {
+      create: jest.fn(),
+    },
   },
 }));
 
@@ -35,13 +37,6 @@ describe('Event Service', () => {
         availabilityEndDate: '2024-01-20',
         preferredTime: 'morning',
         duration: '2-hours',
-        participants: [
-          {
-            name: 'John Doe',
-            email: 'john@example.com',
-            phoneNumber: '+1234567890',
-          },
-        ],
       };
 
       const result = validateEventData(validData);
@@ -50,7 +45,6 @@ describe('Event Service', () => {
       if (!isErrorResponse(result)) {
         expect(result.data?.name).toBe('Test Event');
         expect(result.data?.eventType).toBe('single-day');
-        expect(result.data?.participants).toBeDefined();
       }
     });
 
@@ -62,13 +56,6 @@ describe('Event Service', () => {
         availabilityEndDate: '2024-01-30',
         eventLength: '3-days',
         timingPreference: 'weekends-only',
-        participants: [
-          {
-            name: 'Jane Smith',
-            email: 'jane@example.com',
-            phoneNumber: '',
-          },
-        ],
       };
 
       const result = validateEventData(validData);
@@ -84,7 +71,6 @@ describe('Event Service', () => {
       const invalidData = {
         name: 'Te', // Too short
         eventType: 'invalid-type',
-        participants: [],
       };
 
       const result = validateEventData(invalidData);
@@ -139,13 +125,6 @@ describe('Event Service', () => {
         availabilityEndDate: '2024-01-20',
         preferredTime: 'morning',
         duration: '2-hours',
-        participants: [
-          {
-            name: 'John Doe',
-            email: 'john@example.com',
-            phoneNumber: '',
-          },
-        ],
       };
 
       const result = validateEventData(validData);
@@ -173,18 +152,6 @@ describe('Event Service', () => {
       availabilityEndDate: new Date('2024-01-20'),
       preferredTime: 'morning' as const,
       duration: '2-hours' as const,
-      participants: [
-        {
-          name: 'John Doe',
-          email: 'john@example.com',
-          phoneNumber: '+1234567890',
-        },
-        {
-          name: 'Jane Smith',
-          email: 'jane@example.com',
-          phoneNumber: '',
-        },
-      ],
     };
 
     it('should create an event successfully', async () => {
@@ -193,51 +160,11 @@ describe('Event Service', () => {
         name: validEventData.name,
         description: validEventData.description,
         eventType: validEventData.eventType,
-        participants: [
-          {
-            id: 'participant-1',
-            name: 'John Doe',
-            email: 'john@example.com',
-            token: 'test-uuid',
-          },
-          {
-            id: 'participant-2',
-            name: 'Jane Smith',
-            email: 'jane@example.com',
-            token: 'test-uuid',
-          },
-        ],
+        shareToken: 'test-share-token-123',
+        creatorId: mockUser.id,
       };
 
-      (prisma.$transaction as jest.Mock).mockImplementation(async (callback) => {
-        // Create mock context for transaction
-        const mockTx = {
-          participant: {
-            create: jest.fn()
-              .mockResolvedValueOnce({
-                id: 'participant-1',
-                name: 'John Doe',
-                email: 'john@example.com',
-                token: 'test-uuid',
-              })
-              .mockResolvedValueOnce({
-                id: 'participant-2',
-                name: 'Jane Smith',
-                email: 'jane@example.com',
-                token: 'test-uuid',
-              }),
-          },
-          event: {
-            create: jest.fn().mockResolvedValue(mockCreatedEvent),
-          },
-        };
-        return callback(mockTx);
-      });
-
-      (sendEventInvitation as jest.Mock).mockResolvedValue({
-        success: true,
-        messageId: 'msg-123',
-      });
+      (prisma.event.create as jest.Mock).mockResolvedValue(mockCreatedEvent);
 
       const result = await createEvent(validEventData, mockUser);
 
@@ -245,13 +172,12 @@ describe('Event Service', () => {
       if (!isErrorResponse(result)) {
         expect(result.data?.id).toBe('event-123');
         expect(result.data?.name).toBe('Test Event');
-        expect(result.data?.participants).toHaveLength(2);
-        expect(result.data?.emailResults).toHaveLength(2);
+        expect(result.data?.shareToken).toBe('test-share-token-123');
       }
     });
 
-    it('should handle transaction failure', async () => {
-      (prisma.$transaction as jest.Mock).mockRejectedValue(
+    it('should handle database failure', async () => {
+      (prisma.event.create as jest.Mock).mockRejectedValue(
         new Error('Database error')
       );
 
@@ -264,69 +190,15 @@ describe('Event Service', () => {
       }
     });
 
-    it('should create event without sending emails for participants without email', async () => {
-      const eventDataNoEmail = {
-        ...validEventData,
-        participants: [
-          {
-            name: 'John Doe',
-            email: '',
-            phoneNumber: '+1234567890',
-          },
-        ],
-      };
-
-      const mockCreatedEvent = {
-        id: 'event-123',
-        name: eventDataNoEmail.name,
-        description: eventDataNoEmail.description,
-        eventType: eventDataNoEmail.eventType,
-        participants: [
-          {
-            id: 'participant-1',
-            name: 'John Doe',
-            email: '',
-            token: 'test-uuid',
-          },
-        ],
-      };
-
-      (prisma.$transaction as jest.Mock).mockImplementation(async (callback) => {
-        const mockTx = {
-          participant: {
-            create: jest.fn().mockResolvedValue({
-              id: 'participant-1',
-              name: 'John Doe',
-              email: '',
-              token: 'test-uuid',
-            }),
-          },
-          event: {
-            create: jest.fn().mockResolvedValue(mockCreatedEvent),
-          },
-        };
-        return callback(mockTx);
-      });
-
-      const result = await createEvent(eventDataNoEmail, mockUser);
-
-      expect(result.success).toBe(true);
-      if (!isErrorResponse(result)) {
-        expect(result.data?.emailResults).toHaveLength(0);
-      }
-      expect(sendEventInvitation).not.toHaveBeenCalled();
-    });
-
     it('should handle validation error gracefully', async () => {
       const invalidEventData = {
         name: 'A', // Too short
         eventType: 'invalid-type' as any,
-        participants: [],
       } as any;
 
-      (prisma.$transaction as jest.Mock).mockImplementation(() => {
-        throw new Error('Validation failed');
-      });
+      (prisma.event.create as jest.Mock).mockRejectedValue(
+        new Error('Validation failed')
+      );
 
       const result = await createEvent(invalidEventData, mockUser);
 
@@ -334,53 +206,6 @@ describe('Event Service', () => {
       if (isErrorResponse(result)) {
         expect(result.error).toBe('Failed to create event');
         expect(result.status).toBe(500);
-      }
-    });
-
-    it('should handle email sending failures gracefully', async () => {
-      const mockCreatedEvent = {
-        id: 'event-123',
-        name: validEventData.name,
-        description: validEventData.description,
-        eventType: validEventData.eventType,
-        participants: [
-          {
-            id: 'participant-1',
-            name: 'John Doe',
-            email: 'john@example.com',
-            token: 'test-uuid',
-          },
-        ],
-      };
-
-      (prisma.$transaction as jest.Mock).mockImplementation(async (callback) => {
-        const mockTx = {
-          participant: {
-            create: jest.fn().mockResolvedValue({
-              id: 'participant-1',
-              name: 'John Doe',
-              email: 'john@example.com',
-              token: 'test-uuid',
-            }),
-          },
-          event: {
-            create: jest.fn().mockResolvedValue(mockCreatedEvent),
-          },
-        };
-        return callback(mockTx);
-      });
-
-      (sendEventInvitation as jest.Mock).mockRejectedValue(
-        new Error('Email service down')
-      );
-
-      // Event should still be created successfully even if email fails
-      const result = await createEvent(validEventData, mockUser);
-
-      expect(result.success).toBe(true);
-      if (!isErrorResponse(result)) {
-        expect(result.data?.id).toBe('event-123');
-        expect(result.data?.emailResults).toBeDefined();
       }
     });
 
@@ -392,13 +217,6 @@ describe('Event Service', () => {
         availabilityEndDate: new Date('2024-02-28'),
         eventLength: '3-days' as const,
         timingPreference: 'consecutive' as const,
-        participants: [
-          {
-            name: 'Alice Brown',
-            email: 'alice@example.com',
-            phoneNumber: '',
-          },
-        ],
       };
 
       const mockCreatedEvent = {
@@ -407,39 +225,13 @@ describe('Event Service', () => {
         eventType: multiDayEventData.eventType,
         eventLength: multiDayEventData.eventLength,
         timingPreference: multiDayEventData.timingPreference,
+        shareToken: 'test-share-token-456',
         preferredTime: null,
         duration: null,
-        participants: [
-          {
-            id: 'participant-1',
-            name: 'Alice Brown',
-            email: 'alice@example.com',
-            token: 'test-uuid',
-          },
-        ],
+        creatorId: mockUser.id,
       };
 
-      (prisma.$transaction as jest.Mock).mockImplementation(async (callback) => {
-        const mockTx = {
-          participant: {
-            create: jest.fn().mockResolvedValue({
-              id: 'participant-1',
-              name: 'Alice Brown',
-              email: 'alice@example.com',
-              token: 'test-uuid',
-            }),
-          },
-          event: {
-            create: jest.fn().mockResolvedValue(mockCreatedEvent),
-          },
-        };
-        return callback(mockTx);
-      });
-
-      (sendEventInvitation as jest.Mock).mockResolvedValue({
-        success: true,
-        messageId: 'msg-456',
-      });
+      (prisma.event.create as jest.Mock).mockResolvedValue(mockCreatedEvent);
 
       const result = await createEvent(multiDayEventData, mockUser);
 
@@ -447,6 +239,7 @@ describe('Event Service', () => {
       if (!isErrorResponse(result)) {
         expect(result.data?.id).toBe('event-456');
         expect(result.data?.eventType).toBe('multi-day');
+        expect(result.data?.shareToken).toBe('test-share-token-456');
       }
     });
 
@@ -460,50 +253,11 @@ describe('Event Service', () => {
         name: validEventData.name,
         description: validEventData.description,
         eventType: validEventData.eventType,
-        participants: [
-          {
-            id: 'participant-1',
-            name: 'John Doe',
-            email: 'john@example.com',
-            token: 'test-uuid',
-          },
-          {
-            id: 'participant-2',
-            name: 'Jane Smith',
-            email: 'jane@example.com',
-            token: 'test-uuid',
-          },
-        ],
+        shareToken: 'test-share-token-789',
+        creatorId: minimalUser.id,
       };
 
-      (prisma.$transaction as jest.Mock).mockImplementation(async (callback) => {
-        const mockTx = {
-          participant: {
-            create: jest.fn()
-              .mockResolvedValueOnce({
-                id: 'participant-1',
-                name: 'John Doe',
-                email: 'john@example.com',
-                token: 'test-uuid',
-              })
-              .mockResolvedValueOnce({
-                id: 'participant-2',
-                name: 'Jane Smith',
-                email: 'jane@example.com',
-                token: 'test-uuid',
-              }),
-          },
-          event: {
-            create: jest.fn().mockResolvedValue(mockCreatedEvent),
-          },
-        };
-        return callback(mockTx);
-      });
-
-      (sendEventInvitation as jest.Mock).mockResolvedValue({
-        success: true,
-        messageId: 'msg-123',
-      });
+      (prisma.event.create as jest.Mock).mockResolvedValue(mockCreatedEvent);
 
       const result = await createEvent(validEventData, minimalUser);
 

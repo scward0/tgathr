@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { EventFormData, eventFormSchema } from '@/types/event';
 import { useRouter } from 'next/navigation';
@@ -12,20 +12,13 @@ export function EventForm() {
   const {
     register,
     handleSubmit,
-    control,
     watch,
     formState: { errors },
   } = useForm<EventFormData>({
     resolver: zodResolver(eventFormSchema),
     defaultValues: {
-      participants: [{ name: '', email: '', phoneNumber: '' }],
       eventType: 'single-day',
     },
-  });
-
-  const { fields, append, remove } = useFieldArray({
-    control,
-    name: 'participants',
   });
 
   const eventType = watch('eventType');
@@ -37,7 +30,7 @@ export function EventForm() {
   const onSubmit = async (data: EventFormData) => {
     setIsSubmitting(true);
     setError(null); // Clear any previous errors
-    
+
     try {
       const response = await fetch('/api/events', {
         method: 'POST',
@@ -47,18 +40,18 @@ export function EventForm() {
         credentials: 'include', // Include cookies in the request
         body: JSON.stringify(data),
       });
-  
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to create event');
       }
-  
+
       const result = await response.json();
-      
-      
-      // Redirect to dashboard instead of alert
-      router.push(`/events/${result.id}`);
-      
+
+      // Redirect to event dashboard with success state
+      // The dashboard will show the shareable link
+      router.push(`/events/${result.id}?created=true`);
+
     } catch (error) {
       console.error('Error creating event:', error);
       setError(error instanceof Error ? error.message : 'An unexpected error occurred');
@@ -280,99 +273,27 @@ export function EventForm() {
         </div>
       )}
 
-      {/* Participants */}
-      <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <label className="block text-sm font-medium text-gray-300">
-            Participants
-          </label>
-          <button
-            type="button"
-            onClick={() => append({ name: '', email: '', phoneNumber: '' })}
-            data-testid="add-participant"
-            className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-blue-400 hover:text-blue-300 transition-colors"
-          >
-            + Add Participant
-          </button>
-        </div>
-        
-        <div className="space-y-3">
-          {fields.map((field, index) => (
-            <div key={field.id} className="space-y-2 p-3 bg-gray-800 rounded-md border border-gray-600">
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-400">Participant {index + 1}</span>
-                {index > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => remove(index)}
-                    data-testid={`remove-participant-${index}`}
-                    aria-label={`Remove participant ${index + 1}`}
-                    className="text-red-400 hover:text-red-300 transition-colors text-sm"
-                  >
-                    Remove
-                  </button>
-                )}
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div>
-                  <label htmlFor={`participant-${index}-name`} className="sr-only">
-                    Participant {index + 1} Name
-                  </label>
-                  <input
-                    {...register(`participants.${index}.name`)}
-                    id={`participant-${index}-name`}
-                    data-testid={`participant-${index}-name`}
-                    type="text"
-                    placeholder="Name"
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                  />
-                  {errors.participants?.[index]?.name && (
-                    <p className="text-sm text-red-400 mt-1">
-                      {errors.participants[index]?.name?.message}
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <label htmlFor={`participant-${index}-email`} className="sr-only">
-                    Participant {index + 1} Email
-                  </label>
-                  <input
-                    {...register(`participants.${index}.email`)}
-                    id={`participant-${index}-email`}
-                    data-testid={`participant-${index}-email`}
-                    type="email"
-                    placeholder="email@example.com"
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                  />
-                  {errors.participants?.[index]?.email && (
-                    <p className="text-sm text-red-400 mt-1">
-                      {errors.participants[index]?.email?.message}
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <label htmlFor={`participant-${index}-phone`} className="sr-only">
-                    Participant {index + 1} Phone
-                  </label>
-                  <input
-                    {...register(`participants.${index}.phoneNumber`)}
-                    id={`participant-${index}-phone`}
-                    type="tel"
-                    placeholder="Phone (optional)"
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                  />
-                  {errors.participants?.[index]?.phoneNumber && (
-                    <p className="text-sm text-red-400 mt-1">
-                      {errors.participants[index]?.phoneNumber?.message}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-          ))}
+      {/* Participant Registration Info */}
+      <div className="space-y-4 p-4 bg-blue-900/20 border border-blue-500/30 rounded-md">
+        <div className="flex items-start space-x-3">
+          <div className="flex-shrink-0">
+            <svg className="h-5 w-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+            </svg>
+          </div>
+          <div className="flex-1">
+            <h3 className="text-sm font-medium text-blue-300">
+              Self-Registration Event
+            </h3>
+            <p className="mt-1 text-sm text-gray-300">
+              After creating this event, you&apos;ll receive a shareable link. Share it with your group so they can register themselves and provide their availability.
+            </p>
+            <ul className="mt-2 text-sm text-gray-400 space-y-1 list-disc list-inside">
+              <li>Participants will add their own name and contact info</li>
+              <li>They can opt-in to SMS notifications (A2P 10DLC compliant)</li>
+              <li>Each person can edit their response anytime</li>
+            </ul>
+          </div>
         </div>
       </div>
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { notFound } from 'next/navigation';
+import { notFound, useSearchParams } from 'next/navigation';
 import { format } from 'date-fns';
 import Link from 'next/link';
 
@@ -12,10 +12,15 @@ interface DashboardPageProps {
 }
 
 export default function EventDashboard({ params }: DashboardPageProps) {
+  const searchParams = useSearchParams();
+  const justCreated = searchParams.get('created') === 'true';
+
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [finalizing, setFinalizing] = useState(false);
   const [expandedParticipants, setExpandedParticipants] = useState<Set<string>>(new Set());
+  const [copiedLink, setCopiedLink] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(justCreated);
 
   // Fetch event data function
   const fetchEventData = async () => {
@@ -53,6 +58,24 @@ export default function EventDashboard({ params }: DashboardPageProps) {
 
     return () => clearInterval(pollInterval);
   }, [data, params.id]);
+
+  // Handle copy link
+  const handleCopyLink = async () => {
+    if (!data?.event?.shareToken) {
+      return;
+    }
+
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
+    const shareUrl = `${appUrl}/e/${data.event.shareToken}`;
+
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2000);
+    } catch (error) {
+      console.error('Failed to copy link:', error);
+    }
+  };
 
   // Handle event finalization
   const handleFinalize = async (startTime: string, endTime: string, participantNames: string[]) => {
@@ -151,6 +174,58 @@ export default function EventDashboard({ params }: DashboardPageProps) {
           
           {event.description && (
             <p className="text-gray-300 mt-3">{event.description}</p>
+          )}
+
+          {/* Success Message for New Events */}
+          {showSuccess && (
+            <div className="mt-4 p-4 bg-green-900/30 border border-green-500 rounded-lg">
+              <div className="flex items-start space-x-3">
+                <svg className="h-6 w-6 text-green-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+                <div className="flex-1">
+                  <h3 className="text-green-300 font-semibold">Event Created Successfully!</h3>
+                  <p className="text-green-200 text-sm mt-1">
+                    Share the link below with your participants so they can register and submit their availability.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowSuccess(false)}
+                  className="text-green-400 hover:text-green-300"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Shareable Registration Link */}
+          {!event.isFinalized && event.shareToken && (
+            <div className="mt-4 p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg">
+              <div className="flex items-start justify-between mb-2">
+                <div>
+                  <h3 className="text-blue-300 font-semibold text-sm">📤 Shareable Registration Link</h3>
+                  <p className="text-gray-400 text-sm mt-1">
+                    Share this link with participants so they can self-register
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-2 mt-3">
+                <input
+                  type="text"
+                  readOnly
+                  value={`${typeof window !== 'undefined' ? window.location.origin : ''}/e/${event.shareToken}`}
+                  className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded text-gray-300 text-sm font-mono"
+                  onClick={(e) => e.currentTarget.select()}
+                />
+                <button
+                  onClick={handleCopyLink}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-medium text-sm transition whitespace-nowrap"
+                >
+                  {copiedLink ? '✓ Copied!' : 'Copy Link'}
+                </button>
+              </div>
+            </div>
           )}
 
           {/* Finalized Event Details */}
@@ -324,7 +399,8 @@ export default function EventDashboard({ params }: DashboardPageProps) {
               {participants.map((participant: {
                 id: string;
                 name: string;
-                phoneNumber: string;
+                phoneNumber: string | null;
+                smsOptIn: boolean;
                 hasResponded: boolean;
                 responseCount: number;
                 timeSlots?: Array<{
@@ -376,6 +452,11 @@ export default function EventDashboard({ params }: DashboardPageProps) {
                         <div>
                           <div className="font-medium text-white flex items-center gap-2">
                             {participant.name}
+                            {participant.smsOptIn && (
+                              <span className="text-xs bg-blue-900/50 text-blue-300 px-2 py-0.5 rounded border border-blue-500/30" title="Opted in to SMS notifications">
+                                📱 SMS
+                              </span>
+                            )}
                             {participant.hasResponded && (
                               <span className="text-gray-400 text-sm">
                                 {isExpanded ? '▼' : '▶'}
@@ -383,7 +464,7 @@ export default function EventDashboard({ params }: DashboardPageProps) {
                             )}
                           </div>
                           <div className="text-sm text-gray-400">
-                            {participant.phoneNumber}
+                            {participant.phoneNumber || 'No phone number'}
                           </div>
                         </div>
                       </div>

@@ -16,6 +16,7 @@ export const testFixtures = {
       name: 'Team Meeting',
       description: 'Monthly team sync',
       eventType: 'single-day',
+      shareToken: 'test-share-token-123',
       availabilityStartDate: new Date('2024-01-15'),
       availabilityEndDate: new Date('2024-01-20'),
       preferredTime: 'morning',
@@ -26,6 +27,7 @@ export const testFixtures = {
       finalEndDate: null,
       isFinalized: false,
       expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      notificationSentAt: null,
       creatorId: 'creator-123',
       createdAt: new Date(),
       updatedAt: new Date()
@@ -35,6 +37,7 @@ export const testFixtures = {
       name: 'Workshop',
       description: 'Technical workshop',
       eventType: 'multi-day',
+      shareToken: 'test-share-token-456',
       availabilityStartDate: new Date('2024-02-01'),
       availabilityEndDate: new Date('2024-02-28'),
       preferredTime: null,
@@ -45,6 +48,7 @@ export const testFixtures = {
       finalEndDate: null,
       isFinalized: false,
       expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      notificationSentAt: null,
       creatorId: 'creator-456',
       createdAt: new Date(),
       updatedAt: new Date()
@@ -58,15 +62,19 @@ export const testFixtures = {
       email: 'john@example.com',
       phoneNumber: '+1234567890',
       token: 'test-token-123',
+      smsOptIn: false,
+      smsOptInAt: null,
       createdAt: new Date(),
       updatedAt: new Date()
     },
     withoutEmail: {
       id: 'participant-456',
       name: 'Jane Smith',
-      email: '',
+      email: null,
       phoneNumber: '+0987654321',
       token: 'test-token-456',
+      smsOptIn: false,
+      smsOptInAt: null,
       createdAt: new Date(),
       updatedAt: new Date()
     },
@@ -75,8 +83,10 @@ export const testFixtures = {
         id: 'participant-001',
         name: 'Alice Brown',
         email: 'alice@example.com',
-        phoneNumber: '',
+        phoneNumber: null,
         token: 'token-001',
+        smsOptIn: false,
+        smsOptInAt: null,
         createdAt: new Date(),
         updatedAt: new Date()
       },
@@ -84,8 +94,10 @@ export const testFixtures = {
         id: 'participant-002',
         name: 'Bob Wilson',
         email: 'bob@example.com',
-        phoneNumber: '',
+        phoneNumber: null,
         token: 'token-002',
+        smsOptIn: false,
+        smsOptInAt: null,
         createdAt: new Date(),
         updatedAt: new Date()
       },
@@ -93,8 +105,10 @@ export const testFixtures = {
         id: 'participant-003',
         name: 'Charlie Davis',
         email: 'charlie@example.com',
-        phoneNumber: '',
+        phoneNumber: null,
         token: 'token-003',
+        smsOptIn: false,
+        smsOptInAt: null,
         createdAt: new Date(),
         updatedAt: new Date()
       }

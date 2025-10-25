@@ -104,6 +104,7 @@ export async function GET(request: Request, { params }: RouteParams) {
         name: event.name,
         description: event.description,
         eventType: event.eventType,
+        shareToken: event.shareToken, // For self-registration
         availabilityStartDate: event.availabilityStartDate,
         availabilityEndDate: event.availabilityEndDate,
         preferredTime: event.preferredTime,
@@ -115,15 +116,17 @@ export async function GET(request: Request, { params }: RouteParams) {
         finalEndDate: event.finalEndDate,
         creatorId: event.creatorId,
       },
-      participants: event.participants.map((p: { 
-        id: string; 
-        name: string; 
-        phoneNumber: string; 
-        timeSlots: any[] 
+      participants: event.participants.map((p: {
+        id: string;
+        name: string;
+        phoneNumber: string | null;
+        smsOptIn: boolean;
+        timeSlots: any[]
       }) => ({
         id: p.id,
         name: p.name,
         phoneNumber: p.phoneNumber,
+        smsOptIn: p.smsOptIn, // Show SMS opt-in status
         hasResponded: p.timeSlots.length > 0,
         responseCount: p.timeSlots.length,
         timeSlots: p.timeSlots,

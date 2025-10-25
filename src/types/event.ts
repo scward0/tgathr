@@ -22,13 +22,7 @@ export const eventFormSchema = z.object({
   // Multi-day event fields - allow empty strings and transform
   eventLength: z.string().optional().or(z.literal('')),
   timingPreference: z.string().optional().or(z.literal('')),
-  participants: z.array(
-    z.object({
-      name: z.string().min(1, 'Name is required'),
-      phoneNumber: z.string().optional(),
-      email: z.string().email('Please enter a valid email address')
-    })
-  ).min(1, 'At least one participant is required'),
+  // Participants removed - they will self-register via shareToken
 }).refine((data) => data.availabilityEndDate >= data.availabilityStartDate, {
   message: "End date must be after start date",
   path: ["availabilityEndDate"],
@@ -54,14 +48,15 @@ export const eventFormSchema = z.object({
 
 export type EventFormData = z.infer<typeof eventFormSchema>;
 
-// Add this new type for the API response
+// API response type for created events
 export type CreatedEvent = {
   id: string;
   name: string;
   description?: string;
   eventType: string;
-  availabilityStartDate: Date;
-  availabilityEndDate: Date;
+  shareToken: string; // Single shareable link for self-registration
+  availabilityStartDate?: Date;
+  availabilityEndDate?: Date;
   preferredTime?: string;
   duration?: string;
   eventLength?: string;
@@ -69,11 +64,6 @@ export type CreatedEvent = {
   creator: {
     id: string;
     name: string;
-    token: string;
+    email: string;
   };
-  participants: {
-    id: string;
-    name: string;
-    token: string;
-  }[];
 };

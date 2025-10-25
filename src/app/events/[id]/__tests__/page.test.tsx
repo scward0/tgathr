@@ -5,12 +5,16 @@ import EventDashboard from '../page'
 // Mock Next.js navigation
 const mockPush = jest.fn()
 const mockNotFound = jest.fn()
+const mockSearchParams = new Map()
 
 jest.mock('next/navigation', () => ({
   useRouter: () => ({
     push: mockPush,
     replace: jest.fn(),
     back: jest.fn()
+  }),
+  useSearchParams: () => ({
+    get: (key: string) => mockSearchParams.get(key),
   }),
   notFound: () => mockNotFound()
 }))

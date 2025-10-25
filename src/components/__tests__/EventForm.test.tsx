@@ -25,7 +25,6 @@ describe('EventForm', () => {
       json: () => Promise.resolve({
         success: true,
         id: 'test-event-id',
-        participants: []
       })
     })
   })
@@ -72,25 +71,12 @@ describe('EventForm', () => {
     expect(screen.queryByLabelText(/duration/i)).not.toBeInTheDocument()
   })
 
-  it('allows adding and removing participants', async () => {
+  it('shows self-registration info box', () => {
     render(<EventForm />)
 
-    // Should have one participant field initially
-    expect(screen.getByLabelText(/participant 1 name/i)).toBeInTheDocument()
-    expect(screen.getByLabelText(/participant 1 email/i)).toBeInTheDocument()
-
-    // Add another participant
-    await user.click(screen.getByRole('button', { name: /add participant/i }))
-    
-    expect(screen.getByLabelText(/participant 2 name/i)).toBeInTheDocument()
-    expect(screen.getByLabelText(/participant 2 email/i)).toBeInTheDocument()
-
-    // Remove a participant
-    const removeButtons = screen.getAllByRole('button', { name: /remove participant/i })
-    await user.click(removeButtons[0])
-    
-    // Should only have one participant left
-    expect(screen.queryByLabelText(/participant 2 name/i)).not.toBeInTheDocument()
+    // Should show info about self-registration
+    expect(screen.getByText(/self-registration event/i)).toBeInTheDocument()
+    expect(screen.getByText(/shareable link/i)).toBeInTheDocument()
   })
 
   it('validates form and shows error messages', async () => {
@@ -101,21 +87,7 @@ describe('EventForm', () => {
 
     await waitFor(() => {
       expect(screen.getByText(/event name must be at least 3 characters/i)).toBeInTheDocument()
-      expect(screen.getByText(/name is required/i)).toBeInTheDocument()
-      expect(screen.getByText(/please enter a valid email address/i)).toBeInTheDocument()
     })
-  })
-
-  it('validates email format', async () => {
-    render(<EventForm />)
-
-    // Test that email input accepts input (basic functionality test)
-    const emailInput = screen.getByLabelText(/participant 1 email/i)
-    expect(emailInput).toBeInTheDocument()
-    expect(emailInput).toHaveAttribute('type', 'email')
-
-    await user.type(emailInput, 'test@example.com')
-    expect(emailInput).toHaveValue('test@example.com')
   })
 
   it('requires single-day specific fields for single-day events', async () => {
@@ -125,8 +97,6 @@ describe('EventForm', () => {
     await user.type(screen.getByLabelText(/event name/i), 'Test Event')
     await user.type(screen.getByLabelText(/availability window start/i), '2024-01-15')
     await user.type(screen.getByLabelText(/availability window end/i), '2024-01-20')
-    await user.type(screen.getByLabelText(/participant 1 name/i), 'Test User')
-    await user.type(screen.getByLabelText(/participant 1 email/i), 'test@example.com')
 
     await user.click(screen.getByRole('button', { name: /create event/i }))
 
@@ -145,8 +115,6 @@ describe('EventForm', () => {
     await user.type(screen.getByLabelText(/event name/i), 'Test Event')
     await user.type(screen.getByLabelText(/availability window start/i), '2024-01-15')
     await user.type(screen.getByLabelText(/availability window end/i), '2024-01-20')
-    await user.type(screen.getByLabelText(/participant 1 name/i), 'Test User')
-    await user.type(screen.getByLabelText(/participant 1 email/i), 'test@example.com')
 
     await user.click(screen.getByRole('button', { name: /create event/i }))
 
@@ -165,8 +133,6 @@ describe('EventForm', () => {
     await user.type(screen.getByLabelText(/availability window end/i), '2024-01-20')
     await user.selectOptions(screen.getByLabelText(/preferred time/i), 'morning')
     await user.selectOptions(screen.getByLabelText(/duration/i), '2-hours')
-    await user.type(screen.getByLabelText(/participant 1 name/i), 'John Doe')
-    await user.type(screen.getByLabelText(/participant 1 email/i), 'john@example.com')
 
     await user.click(screen.getByRole('button', { name: /create event/i }))
 
@@ -185,20 +151,13 @@ describe('EventForm', () => {
           availabilityEndDate: '2024-01-20T00:00:00.000Z',
           preferredTime: 'morning',
           duration: '2-hours',
-          participants: [
-            {
-              name: 'John Doe',
-              phoneNumber: '',
-              email: 'john@example.com'
-            }
-          ]
         })
       })
     })
 
     // Should navigate on success
     await waitFor(() => {
-      expect(mockPush).toHaveBeenCalledWith('/events/test-event-id')
+      expect(mockPush).toHaveBeenCalledWith('/events/test-event-id?created=true')
     })
   })
 
@@ -214,8 +173,6 @@ describe('EventForm', () => {
     await user.type(screen.getByLabelText(/availability window end/i), '2024-01-30')
     await user.selectOptions(screen.getByLabelText(/event length/i), '3-days')
     await user.selectOptions(screen.getByLabelText(/timing preference/i), 'weekends-only')
-    await user.type(screen.getByLabelText(/participant 1 name/i), 'Jane Smith')
-    await user.type(screen.getByLabelText(/participant 1 email/i), 'jane@example.com')
 
     await user.click(screen.getByRole('button', { name: /create event/i }))
 
@@ -236,13 +193,6 @@ describe('EventForm', () => {
           duration: '',
           eventLength: '3-days',
           timingPreference: 'weekends-only',
-          participants: [
-            {
-              name: 'Jane Smith',
-              phoneNumber: '',
-              email: 'jane@example.com'
-            }
-          ]
         })
       })
     })
@@ -266,8 +216,6 @@ describe('EventForm', () => {
     await user.type(screen.getByLabelText(/availability window end/i), '2024-01-20')
     await user.selectOptions(screen.getByLabelText(/preferred time/i), 'morning')
     await user.selectOptions(screen.getByLabelText(/duration/i), '2-hours')
-    await user.type(screen.getByLabelText(/participant 1 name/i), 'Test User')
-    await user.type(screen.getByLabelText(/participant 1 email/i), 'test@example.com')
 
     await user.click(screen.getByRole('button', { name: /create event/i }))
 
@@ -284,7 +232,7 @@ describe('EventForm', () => {
     ;(global.fetch as jest.Mock).mockImplementation(
       () => new Promise(resolve => setTimeout(() => resolve({
         ok: true,
-        json: () => Promise.resolve({ success: true, id: 'test-id', participants: [] })
+        json: () => Promise.resolve({ success: true, id: 'test-id' })
       }), 100))
     )
 
@@ -296,8 +244,6 @@ describe('EventForm', () => {
     await user.type(screen.getByLabelText(/availability window end/i), '2024-01-20')
     await user.selectOptions(screen.getByLabelText(/preferred time/i), 'morning')
     await user.selectOptions(screen.getByLabelText(/duration/i), '2-hours')
-    await user.type(screen.getByLabelText(/participant 1 name/i), 'Test User')
-    await user.type(screen.getByLabelText(/participant 1 email/i), 'test@example.com')
 
     await user.click(screen.getByRole('button', { name: /create event/i }))
 
@@ -308,30 +254,6 @@ describe('EventForm', () => {
     // Wait for submission to complete
     await waitFor(() => {
       expect(mockPush).toHaveBeenCalled()
-    })
-  })
-
-  it('allows optional phone numbers for participants', async () => {
-    render(<EventForm />)
-
-    // Fill in participant with phone number
-    await user.type(screen.getByLabelText(/participant 1 name/i), 'John Doe')
-    await user.type(screen.getByLabelText(/participant 1 email/i), 'john@example.com')
-    await user.type(screen.getByLabelText(/participant 1 phone/i), '+1234567890')
-
-    // Fill other required fields
-    await user.type(screen.getByLabelText(/event name/i), 'Test Event')
-    await user.type(screen.getByLabelText(/availability window start/i), '2024-01-15')
-    await user.type(screen.getByLabelText(/availability window end/i), '2024-01-20')
-    await user.selectOptions(screen.getByLabelText(/preferred time/i), 'morning')
-    await user.selectOptions(screen.getByLabelText(/duration/i), '2-hours')
-
-    await user.click(screen.getByRole('button', { name: /create event/i }))
-
-    await waitFor(() => {
-      expect(global.fetch).toHaveBeenCalledWith('/api/events', expect.objectContaining({
-        body: expect.stringContaining('+1234567890')
-      }))
     })
   })
 })

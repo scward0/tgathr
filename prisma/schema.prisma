@@ -17,58 +17,65 @@ model Event {
   id          String   @id @default(cuid())
   name        String
   description String?
-  
+
   // Event type and metadata
   eventType   String   // 'single-day' or 'multi-day'
-  
+
   // Availability collection window (when we're asking people to check)
   availabilityStartDate DateTime
   availabilityEndDate   DateTime
-  
+
   // Single-day event preferences
   preferredTime String?  // 'morning', 'afternoon', 'evening', 'all-day'
   duration      String?  // '1-hour', '2-hours', '3-hours', '4-hours', 'all-day'
-  
-  // Multi-day event preferences  
+
+  // Multi-day event preferences
   eventLength      String? // '2-days', '3-days', '1-week', '2-weeks'
   timingPreference String? // 'weekends-only', 'include-weekdays', 'flexible'
-  
+
   // Final decided dates (set after algorithm runs)
   finalStartDate DateTime?
   finalEndDate   DateTime?
   isFinalized    Boolean  @default(false)
-  
+
+  // Shareable link for self-registration (A2P 10DLC compliance)
+  shareToken  String   @unique @default(cuid())
+
   // Timestamps and expiration
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   expiresAt DateTime // Set to 30 days from creation in API
   notificationSentAt DateTime? // Track when expiration notification was sent
-  
+
   // Relationships - creatorId references Neon Auth user ID
   creatorId    String  // References neon_auth.users_sync.id
   participants Participant[] @relation("EventParticipants")
   timeSlots    TimeSlot[]
-  
+
   @@index([expiresAt])
   @@index([creatorId])
   @@index([isFinalized])
+  @@index([shareToken])
 }
 
 model Participant {
   id          String   @id @default(cuid())
   name        String
-  phoneNumber String
+  phoneNumber String?  // Optional - only if participant wants SMS notifications
   email       String?  // Optional email field for email invitations
-  token       String   @unique // For secure access to availability form
-  
+  token       String   @unique // For secure access to edit their response
+
+  // SMS consent tracking for A2P 10DLC compliance
+  smsOptIn    Boolean   @default(false)
+  smsOptInAt  DateTime? // Timestamp when user opted in
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   // Relationships
   events        Event[]    @relation("EventParticipants")
   timeSlots     TimeSlot[]
-  
-  @@unique([phoneNumber, token])
+
   @@index([phoneNumber])
   @@index([email])
   @@index([token])
