@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { notFound, useSearchParams } from 'next/navigation';
 import { format } from 'date-fns';
 import Link from 'next/link';
+import { AvailabilityVisualization } from '@/components/AvailabilityVisualization';
 
 interface DashboardPageProps {
   params: {
@@ -23,6 +24,8 @@ export default function EventDashboard({ params }: DashboardPageProps) {
   const [copiedMessage, setCopiedMessage] = useState(false);
   const [copiedFinalizationMessage, setCopiedFinalizationMessage] = useState(false);
   const [showSuccess, setShowSuccess] = useState(justCreated);
+  const [deleteParticipantConfirmation, setDeleteParticipantConfirmation] = useState<{ id: string; name: string } | null>(null);
+  const [deletingParticipant, setDeletingParticipant] = useState(false);
 
   // Fetch event data function
   const fetchEventData = async () => {
@@ -149,7 +152,7 @@ Looking forward to seeing everyone there!`;
     }
 
     setFinalizing(true);
-    
+
     try {
       const response = await fetch(`/api/events/${params.id}/finalize`, {
         method: 'POST',
@@ -176,6 +179,34 @@ Looking forward to seeing everyone there!`;
       alert('Failed to finalize event. Please try again.');
     } finally {
       setFinalizing(false);
+    }
+  };
+
+  // Handle participant deletion
+  const handleDeleteParticipant = async () => {
+    if (!deleteParticipantConfirmation) {
+      return;
+    }
+
+    setDeletingParticipant(true);
+    try {
+      const response = await fetch(`/api/events/${params.id}/participants/${deleteParticipantConfirmation.id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        // Refresh event data to show updated participant list
+        await fetchEventData();
+        setDeleteParticipantConfirmation(null);
+      } else {
+        const errorData = await response.json();
+        alert(`Failed to delete participant: ${errorData.error || 'Unknown error'}`);
+      }
+    } catch (_error) {
+      alert('Failed to delete participant. Please try again.');
+    } finally {
+      setDeletingParticipant(false);
     }
   };
 
@@ -364,6 +395,16 @@ Looking forward to seeing everyone there!`;
           </div>
         </div>
 
+        {/* Availability Visualization */}
+        {participants && participants.length > 0 && (
+          <div className="mb-8">
+            <AvailabilityVisualization
+              event={event}
+              participants={participants}
+            />
+          </div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Smart Algorithm Recommendations */}
           <div className="bg-gray-800 rounded-lg p-6">
@@ -528,15 +569,17 @@ Looking forward to seeing everyone there!`;
                     className="bg-gray-700 rounded-lg overflow-hidden"
                   >
                     {/* Main participant card */}
-                    <div 
-                      className={`flex items-center justify-between p-3 transition-colors ${
-                        participant.hasResponded 
-                          ? 'cursor-pointer hover:bg-gray-600' 
-                          : 'cursor-default'
-                      }`}
-                      onClick={() => participant.hasResponded && toggleParticipant(participant.id)}
+                    <div
+                      className="flex items-center justify-between p-3 transition-colors"
                     >
-                      <div className="flex items-center space-x-3">
+                      <div
+                        className={`flex items-center space-x-3 flex-1 ${
+                          participant.hasResponded
+                            ? 'cursor-pointer hover:opacity-80'
+                            : 'cursor-default'
+                        }`}
+                        onClick={() => participant.hasResponded && toggleParticipant(participant.id)}
+                      >
                         <div className={`w-3 h-3 rounded-full ${
                           participant.hasResponded ? 'bg-green-400' : 'bg-gray-400'
                         }`} />
@@ -559,18 +602,30 @@ Looking forward to seeing everyone there!`;
                           </div>
                         </div>
                       </div>
-                      
-                      <div className="text-right">
-                        {participant.hasResponded ? (
-                          <div>
-                            <div className="text-green-400 font-medium">✓ Responded</div>
-                            <div className="text-xs text-gray-400">
-                              {participant.responseCount} time{participant.responseCount !== 1 ? 's' : ''} selected
+
+                      <div className="flex items-center gap-3">
+                        <div className="text-right">
+                          {participant.hasResponded ? (
+                            <div>
+                              <div className="text-green-400 font-medium">✓ Responded</div>
+                              <div className="text-xs text-gray-400">
+                                {participant.responseCount} time{participant.responseCount !== 1 ? 's' : ''} selected
+                              </div>
                             </div>
-                          </div>
-                        ) : (
-                          <div className="text-gray-400">Pending</div>
-                        )}
+                          ) : (
+                            <div className="text-gray-400">Pending</div>
+                          )}
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeleteParticipantConfirmation({ id: participant.id, name: participant.name });
+                          }}
+                          className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-sm rounded transition-colors"
+                          title="Remove participant"
+                        >
+                          Remove
+                        </button>
                       </div>
                     </div>
 
@@ -763,6 +818,35 @@ Looking forward to seeing everyone there!`;
         )}
         </div>
       </div>
+
+      {/* Delete Participant Confirmation Modal */}
+      {deleteParticipantConfirmation && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-gray-800 rounded-lg p-6 max-w-md w-full">
+            <h3 className="text-xl font-bold text-white mb-4">Remove Participant?</h3>
+            <p className="text-gray-300 mb-6">
+              Are you sure you want to remove &quot;{deleteParticipantConfirmation.name}&quot;?
+              This will delete their availability data and cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeleteParticipantConfirmation(null)}
+                disabled={deletingParticipant}
+                className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteParticipant}
+                disabled={deletingParticipant}
+                className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded transition-colors disabled:opacity-50"
+              >
+                {deletingParticipant ? 'Removing...' : 'Remove Participant'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

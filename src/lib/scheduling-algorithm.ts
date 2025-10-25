@@ -98,12 +98,15 @@ import {
         recommendations.push(...dayRecommendations);
       }
   
-      // Sort by score (best first) and return top options
+      // Sort by score (best first)
       const sortedRecommendations = recommendations.sort((a, b) => b.score - a.score);
 
+      // Ensure date diversity: prefer showing different dates over multiple times on same date
+      const diverseRecommendations = this.ensureDateDiversity(sortedRecommendations);
+
       // If we have multi-participant recommendations, prefer those
-      const multiParticipantRecs = sortedRecommendations.filter(r => r.participantCount > 1);
-      const singleParticipantRecs = sortedRecommendations.filter(r => r.participantCount === 1);
+      const multiParticipantRecs = diverseRecommendations.filter(r => r.participantCount > 1);
+      const singleParticipantRecs = diverseRecommendations.filter(r => r.participantCount === 1);
 
       // If we have multi-participant recommendations with maximum participation, prioritize them
       if (multiParticipantRecs.length > 0) {
@@ -115,7 +118,7 @@ import {
           return bestRecs.slice(0, 1); // Only the single best when all participants can attend
         }
 
-        // Otherwise return more options
+        // Otherwise return more options (now with date diversity ensured)
         return [...bestRecs.slice(0, 3), ...singleParticipantRecs.slice(0, 2)];
       }
 
@@ -471,6 +474,36 @@ import {
         seen.add(key);
         return true;
       });
+    }
+
+    /**
+     * Ensure date diversity in recommendations by keeping only the best time slot per date
+     * This prevents showing multiple times from the same date when other dates have availability
+     */
+    private ensureDateDiversity(recommendations: RecommendedTime[]): RecommendedTime[] {
+      const dateMap = new Map<string, RecommendedTime>();
+
+      // Group by date and keep the highest-scoring time slot for each date
+      for (const rec of recommendations) {
+        const dateKey = format(rec.startTime, 'yyyy-MM-dd');
+        const existing = dateMap.get(dateKey);
+
+        // Keep this recommendation if:
+        // 1. No recommendation exists for this date yet, OR
+        // 2. This recommendation has a higher score, OR
+        // 3. Same score but more participants, OR
+        // 4. Same score and participants but earlier time (preference for earlier slots)
+        if (!existing ||
+            rec.score > existing.score ||
+            (rec.score === existing.score && rec.participantCount > existing.participantCount) ||
+            (rec.score === existing.score && rec.participantCount === existing.participantCount &&
+             rec.startTime.getTime() < existing.startTime.getTime())) {
+          dateMap.set(dateKey, rec);
+        }
+      }
+
+      // Convert back to array and sort by score (maintains original sort order)
+      return Array.from(dateMap.values()).sort((a, b) => b.score - a.score);
     }
     
     private generateSingleDayReasoning(recommendation: RecommendedTime): string {
