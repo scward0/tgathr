@@ -20,6 +20,8 @@ export default function EventDashboard({ params }: DashboardPageProps) {
   const [finalizing, setFinalizing] = useState(false);
   const [expandedParticipants, setExpandedParticipants] = useState<Set<string>>(new Set());
   const [copiedLink, setCopiedLink] = useState(false);
+  const [copiedMessage, setCopiedMessage] = useState(false);
+  const [copiedFinalizationMessage, setCopiedFinalizationMessage] = useState(false);
   const [showSuccess, setShowSuccess] = useState(justCreated);
 
   // Fetch event data function
@@ -74,6 +76,69 @@ export default function EventDashboard({ params }: DashboardPageProps) {
       setTimeout(() => setCopiedLink(false), 2000);
     } catch (error) {
       console.error('Failed to copy link:', error);
+    }
+  };
+
+  // Handle copy message template (for event creation)
+  const handleCopyMessage = async () => {
+    if (!data?.event?.shareToken) {
+      return;
+    }
+
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
+    const shareUrl = `${appUrl}/e/${data.event.shareToken}`;
+
+    const eventTypeText = data.event.eventType === 'single-day'
+      ? 'single-day event'
+      : 'multi-day event';
+
+    const message = `Hey everyone! 👋
+
+I'm organizing "${data.event.name}" and need to find a time that works for everyone.
+
+📅 Event Type: ${eventTypeText.charAt(0).toUpperCase() + eventTypeText.slice(1)}
+📆 Date Range: ${format(new Date(data.event.availabilityStartDate), 'MMM d')} - ${format(new Date(data.event.availabilityEndDate), 'MMM d, yyyy')}
+
+Click the link below to:
+✓ Register for the event
+✓ Submit your availability
+✓ (Optional) Opt-in to get a text when we finalize the date
+
+${shareUrl}
+
+Looking forward to seeing everyone! 🎉`;
+
+    try {
+      await navigator.clipboard.writeText(message);
+      setCopiedMessage(true);
+      setTimeout(() => setCopiedMessage(false), 2000);
+    } catch (error) {
+      console.error('Failed to copy message:', error);
+    }
+  };
+
+  // Handle copy finalization message
+  const handleCopyFinalizationMessage = async () => {
+    if (!data?.event?.isFinalized || !data.event.finalStartDate) {
+      return;
+    }
+
+    const dateText = data.event.eventType === 'single-day'
+      ? `${format(new Date(data.event.finalStartDate), 'EEEE, MMMM d, yyyy')} at ${format(new Date(data.event.finalStartDate), 'h:mm a')}`
+      : `${format(new Date(data.event.finalStartDate), 'MMMM d')} - ${format(new Date(data.event.finalEndDate), 'MMMM d, yyyy')}`;
+
+    const message = `🎉 "${data.event.name}" is confirmed! 🎉
+
+📅 Date/Time: ${dateText}
+
+Looking forward to seeing everyone there!`;
+
+    try {
+      await navigator.clipboard.writeText(message);
+      setCopiedFinalizationMessage(true);
+      setTimeout(() => setCopiedFinalizationMessage(false), 2000);
+    } catch (error) {
+      console.error('Failed to copy finalization message:', error);
     }
   };
 
@@ -225,6 +290,19 @@ export default function EventDashboard({ params }: DashboardPageProps) {
                   {copiedLink ? '✓ Copied!' : 'Copy Link'}
                 </button>
               </div>
+
+              {/* Copy Message Template Button */}
+              <div className="mt-3 pt-3 border-t border-blue-500/20">
+                <p className="text-gray-400 text-xs mb-2">
+                  Or copy a pre-formatted message for group chats:
+                </p>
+                <button
+                  onClick={handleCopyMessage}
+                  className="w-full px-4 py-2.5 bg-gray-700 hover:bg-gray-600 text-white rounded font-medium text-sm transition border border-gray-600"
+                >
+                  {copiedMessage ? '✓ Message Copied!' : '📋 Copy Message Template'}
+                </button>
+              </div>
             </div>
           )}
 
@@ -232,11 +310,24 @@ export default function EventDashboard({ params }: DashboardPageProps) {
           {event.isFinalized && event.finalStartDate && (
             <div className="mt-4 p-4 bg-green-900/30 border border-green-700 rounded-lg">
               <h3 className="text-green-100 font-semibold mb-2">🎉 Event Confirmed!</h3>
-              <div className="text-green-200">
-                {event.eventType === 'single-day' 
+              <div className="text-green-200 mb-3">
+                {event.eventType === 'single-day'
                   ? `${format(new Date(event.finalStartDate), 'EEEE, MMMM d, yyyy')} at ${format(new Date(event.finalStartDate), 'h:mm a')}`
                   : `${format(new Date(event.finalStartDate), 'MMMM d')} - ${format(new Date(event.finalEndDate), 'MMMM d, yyyy')}`
                 }
+              </div>
+
+              {/* Copy Finalization Message Button */}
+              <div className="mt-3 pt-3 border-t border-green-700/50">
+                <p className="text-green-200 text-xs mb-2">
+                  Share this confirmation with your group:
+                </p>
+                <button
+                  onClick={handleCopyFinalizationMessage}
+                  className="w-full px-4 py-2.5 bg-green-700 hover:bg-green-600 text-white rounded font-medium text-sm transition"
+                >
+                  {copiedFinalizationMessage ? '✓ Message Copied!' : '📋 Copy Confirmation Message'}
+                </button>
               </div>
             </div>
           )}
