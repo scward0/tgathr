@@ -31,11 +31,44 @@ export default function PublicEventPage({ params }: EventPageProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [registering, setRegistering] = useState(false);
+  const [checkingExistingRegistration, setCheckingExistingRegistration] = useState(true);
 
   // Registration form state
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [smsOptIn, setSmsOptIn] = useState(false);
+
+  // Check for existing registration on mount
+  useEffect(() => {
+    async function checkExistingRegistration() {
+      try {
+        // Check localStorage for saved editToken for this event
+        const storageKey = `tgathr_participant_${params.shareToken}`;
+        const savedEditToken = localStorage.getItem(storageKey);
+
+        if (savedEditToken) {
+          // Validate the editToken by checking if participant still exists
+          const response = await fetch(`/api/participants/${savedEditToken}`);
+
+          if (response.ok) {
+            // Valid token - redirect to edit page
+            router.push(`/p/${savedEditToken}`);
+            return;
+          } else {
+            // Invalid token - remove from localStorage
+            localStorage.removeItem(storageKey);
+          }
+        }
+      } catch (err) {
+        console.error('Error checking existing registration:', err);
+        // Continue to show registration form
+      } finally {
+        setCheckingExistingRegistration(false);
+      }
+    }
+
+    checkExistingRegistration();
+  }, [params.shareToken, router]);
 
   useEffect(() => {
     async function fetchEventData() {
@@ -95,6 +128,10 @@ export default function PublicEventPage({ params }: EventPageProps) {
 
       const result = await response.json();
 
+      // Save editToken to localStorage for return visitor flow
+      const storageKey = `tgathr_participant_${params.shareToken}`;
+      localStorage.setItem(storageKey, result.editToken);
+
       // Redirect to availability submission page
       router.push(`/respond/${result.editToken}`);
     } catch (err) {
@@ -105,10 +142,12 @@ export default function PublicEventPage({ params }: EventPageProps) {
     }
   };
 
-  if (loading) {
+  if (loading || checkingExistingRegistration) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-white">Loading event...</div>
+        <div className="text-white">
+          {checkingExistingRegistration ? 'Checking for existing registration...' : 'Loading event...'}
+        </div>
       </div>
     );
   }
