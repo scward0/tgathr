@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { format, eachDayOfInterval } from 'date-fns';
+import { useState, useEffect } from 'react';
+import { format, eachDayOfInterval, parseISO } from 'date-fns';
 
 interface AvailabilityFormProps {
   event: {
@@ -19,6 +19,10 @@ interface AvailabilityFormProps {
     id: string;
     name: string;
     token: string;
+    timeSlots?: Array<{
+      startTime: string;
+      endTime: string;
+    }>;
   };
 }
 
@@ -33,6 +37,29 @@ export function AvailabilityForm({ event, participant }: AvailabilityFormProps) 
   const [selectedSlots, setSelectedSlots] = useState<TimeSlot[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [initialSlotCount, setInitialSlotCount] = useState(0);
+
+  // Pre-populate with existing time slots
+  useEffect(() => {
+    if (participant.timeSlots && participant.timeSlots.length > 0) {
+      const existingSlots = participant.timeSlots.map(slot => {
+        const startDateTime = parseISO(slot.startTime);
+        const endDateTime = parseISO(slot.endTime);
+
+        return {
+          date: new Date(startDateTime.getFullYear(), startDateTime.getMonth(), startDateTime.getDate()),
+          startTime: format(startDateTime, 'HH:mm'),
+          endTime: format(endDateTime, 'HH:mm'),
+          selected: true,
+        };
+      });
+
+      setSelectedSlots(existingSlots);
+      setInitialSlotCount(existingSlots.length);
+      setIsEditing(true);
+    }
+  }, [participant.timeSlots]);
 
   // Generate date range
   const startDate = new Date(event.availabilityStartDate);
@@ -159,10 +186,13 @@ const isSlotSelected = (date: Date, timeSlot: string) => {
       <div className="bg-green-900/50 border border-green-700 rounded-lg p-8 text-center">
         <div className="text-4xl mb-4">✅</div>
         <h3 className="text-xl font-semibold text-white mb-2">
-          Availability Submitted!
+          {isEditing ? 'Availability Updated!' : 'Availability Submitted!'}
         </h3>
         <p className="text-green-100">
-          Thanks {participant.name}! We&apos;ll let you know once everyone responds and the organizer picks the best time.
+          {isEditing
+            ? `Your availability has been updated successfully! You can return to this page anytime to make more changes.`
+            : `Thanks ${participant.name}! We'll let you know once everyone responds and the organizer picks the best time.`
+          }
         </p>
       </div>
     );
@@ -170,9 +200,22 @@ const isSlotSelected = (date: Date, timeSlot: string) => {
 
   return (
     <div className="space-y-6">
+      {/* Editing Indicator */}
+      {isEditing && (
+        <div className="bg-blue-900/30 border border-blue-500 rounded-lg p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-blue-400 font-semibold">✏️ Editing Your Availability</span>
+          </div>
+          <p className="text-blue-200 text-sm">
+            You previously selected {initialSlotCount} time{initialSlotCount !== 1 ? 's' : ''}.
+            Make any changes below and click &quot;Update Availability&quot; to save.
+          </p>
+        </div>
+      )}
+
       <div className="text-center">
         <h3 className="text-lg font-semibold text-white mb-2">
-          Select Your Available Times
+          {isEditing ? 'Update Your Available Times' : 'Select Your Available Times'}
         </h3>
         <p className="text-gray-400 text-sm">
           Click the times when you&apos;re available. You can select multiple options.
@@ -233,7 +276,12 @@ const isSlotSelected = (date: Date, timeSlot: string) => {
         disabled={selectedSlots.length === 0 || isSubmitting}
         className="w-full px-6 py-3 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
       >
-        {isSubmitting ? 'Submitting...' : `Submit Availability (${selectedSlots.length} times selected)`}
+        {isSubmitting
+          ? (isEditing ? 'Updating...' : 'Submitting...')
+          : isEditing
+            ? `Update Availability (${selectedSlots.length} times selected)`
+            : `Submit Availability (${selectedSlots.length} times selected)`
+        }
       </button>
     </div>
   );

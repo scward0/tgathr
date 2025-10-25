@@ -27,6 +27,11 @@ export async function GET(request: Request, { params }: RouteParams) {
       where: { token: params.token },
       include: {
         events: true,
+        timeSlots: {
+          orderBy: {
+            startTime: 'asc',
+          },
+        },
       },
     });
 
@@ -39,12 +44,18 @@ export async function GET(request: Request, { params }: RouteParams) {
 
     // Get the most recent event for this participant
     const event = participant.events[0];
-    
+
     return NextResponse.json({
       participant: {
         id: participant.id,
         name: participant.name,
         token: participant.token,
+        phoneNumber: participant.phoneNumber,
+        smsOptIn: participant.smsOptIn,
+        timeSlots: participant.timeSlots.map(slot => ({
+          startTime: slot.startTime.toISOString(),
+          endTime: slot.endTime.toISOString(),
+        })),
       },
       event: {
         id: event.id,
