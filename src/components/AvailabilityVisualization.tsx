@@ -138,28 +138,28 @@ export function AvailabilityVisualization({ event, participants }: AvailabilityV
   }
 
   return (
-    <div className="bg-gray-800 rounded-lg p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-semibold text-white">Availability Heatmap</h2>
-        <div className="flex items-center gap-4 text-sm">
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-blue-500 rounded"></div>
+    <div className="bg-gray-800 rounded-lg p-4 md:p-6">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-0 mb-4 md:mb-6">
+        <h2 className="text-lg md:text-xl font-semibold text-white">Availability Heatmap</h2>
+        <div className="flex items-center gap-2 md:gap-4 text-xs md:text-sm flex-wrap">
+          <div className="flex items-center gap-1 md:gap-2">
+            <div className="w-3 h-3 md:w-4 md:h-4 bg-blue-500 rounded"></div>
             <span className="text-gray-300">75%+</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-blue-600/80 rounded"></div>
+          <div className="flex items-center gap-1 md:gap-2">
+            <div className="w-3 h-3 md:w-4 md:h-4 bg-blue-600/80 rounded"></div>
             <span className="text-gray-300">50-75%</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-blue-700/60 rounded"></div>
+          <div className="flex items-center gap-1 md:gap-2">
+            <div className="w-3 h-3 md:w-4 md:h-4 bg-blue-700/60 rounded"></div>
             <span className="text-gray-300">25-50%</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-blue-900/40 rounded"></div>
+          <div className="flex items-center gap-1 md:gap-2">
+            <div className="w-3 h-3 md:w-4 md:h-4 bg-blue-900/40 rounded"></div>
             <span className="text-gray-300">&lt;25%</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-gray-800 border border-gray-700 rounded"></div>
+          <div className="flex items-center gap-1 md:gap-2">
+            <div className="w-3 h-3 md:w-4 md:h-4 bg-gray-800 border border-gray-700 rounded"></div>
             <span className="text-gray-300">None</span>
           </div>
         </div>
@@ -171,11 +171,11 @@ export function AvailabilityVisualization({ event, participants }: AvailabilityV
           <table className="w-full border-collapse">
             <thead>
               <tr>
-                <th className="border border-gray-700 bg-gray-900 p-3 text-left text-sm font-semibold text-gray-300 sticky left-0 z-10">
+                <th className="border border-gray-700 bg-gray-900 p-2 md:p-3 text-left text-xs md:text-sm font-semibold text-gray-300 sticky left-0 z-10">
                   Date
                 </th>
                 {timeSlots.map((slot, idx) => (
-                  <th key={idx} className="border border-gray-700 bg-gray-900 p-3 text-center text-sm font-semibold text-gray-300 min-w-[120px]">
+                  <th key={idx} className="border border-gray-700 bg-gray-900 p-2 md:p-3 text-center text-xs md:text-sm font-semibold text-gray-300 min-w-[80px] md:min-w-[120px]">
                     {slot.label}
                   </th>
                 ))}
@@ -184,7 +184,7 @@ export function AvailabilityVisualization({ event, participants }: AvailabilityV
             <tbody>
               {dateRange.map((date, dateIdx) => (
                 <tr key={dateIdx} className="hover:bg-gray-700/20 transition-colors">
-                  <td className="border border-gray-700 bg-gray-900 p-3 text-sm text-white font-medium sticky left-0 z-10">
+                  <td className="border border-gray-700 bg-gray-900 p-2 md:p-3 text-xs md:text-sm text-white font-medium sticky left-0 z-10">
                     <div>{format(date, 'EEE')}</div>
                     <div className="text-gray-400 text-xs">{format(date, 'MMM d')}</div>
                   </td>
@@ -195,13 +195,13 @@ export function AvailabilityVisualization({ event, participants }: AvailabilityV
                     return (
                       <td
                         key={slotIdx}
-                        className={`border border-gray-700 p-3 text-center cursor-pointer transition-all ${getColorIntensity(available.length)} ${
+                        className={`border border-gray-700 p-2 md:p-3 text-center cursor-pointer transition-all ${getColorIntensity(available.length)} ${
                           isSelected ? 'ring-2 ring-yellow-400' : ''
                         }`}
                         onClick={() => setSelectedCell(isSelected ? null : { date, slotIndex: slotIdx })}
                         title={`${available.length}/${totalRespondents} available`}
                       >
-                        <div className={`text-lg font-bold ${getTextColor(available.length)}`}>
+                        <div className={`text-base md:text-lg font-bold ${getTextColor(available.length)}`}>
                           {available.length}
                         </div>
                         <div className="text-xs text-gray-400">
@@ -219,8 +219,8 @@ export function AvailabilityVisualization({ event, participants }: AvailabilityV
 
       {/* Selected Cell Details */}
       {selectedCell && (
-        <div className="mt-6 p-4 bg-gray-700 rounded-lg border border-gray-600">
-          <h3 className="text-sm font-semibold text-white mb-3">
+        <div className="mt-4 md:mt-6 p-3 md:p-4 bg-gray-700 rounded-lg border border-gray-600">
+          <h3 className="text-xs md:text-sm font-semibold text-white mb-2 md:mb-3">
             {format(selectedCell.date, 'EEEE, MMMM d, yyyy')} - {timeSlots[selectedCell.slotIndex].label}
           </h3>
           <div className="space-y-2">
@@ -265,7 +265,7 @@ export function AvailabilityVisualization({ event, participants }: AvailabilityV
         </div>
       )}
 
-      <div className="mt-4 text-xs text-gray-400 text-center">
+      <div className="mt-3 md:mt-4 text-xs text-gray-400 text-center">
         Click on any cell to see who is available
       </div>
     </div>

@@ -395,20 +395,10 @@ Looking forward to seeing everyone there!`;
           </div>
         </div>
 
-        {/* Availability Visualization */}
-        {participants && participants.length > 0 && (
-          <div className="mb-8">
-            <AvailabilityVisualization
-              event={event}
-              participants={participants}
-            />
-          </div>
-        )}
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-8">
           {/* Smart Algorithm Recommendations */}
-          <div className="bg-gray-800 rounded-lg p-6">
-            <h2 className="text-xl font-semibold text-white mb-4">
+          <div className="bg-gray-800 rounded-lg p-4 md:p-6">
+            <h2 className="text-lg md:text-xl font-semibold text-white mb-3 md:mb-4">
               🧠 Smart Recommendations
             </h2>
             
@@ -522,8 +512,8 @@ Looking forward to seeing everyone there!`;
 
 
           {/* Participant Status - Right Column */}
-          <div className="bg-gray-800 rounded-lg p-6">
-            <h2 className="text-xl font-semibold text-white mb-4">
+          <div className="bg-gray-800 rounded-lg p-4 md:p-6">
+            <h2 className="text-lg md:text-xl font-semibold text-white mb-3 md:mb-4">
               👥 Participant Status
             </h2>
             
@@ -570,50 +560,50 @@ Looking forward to seeing everyone there!`;
                   >
                     {/* Main participant card */}
                     <div
-                      className="flex items-center justify-between p-3 transition-colors"
+                      className="flex items-center justify-between p-2 md:p-3 transition-colors"
                     >
                       <div
-                        className={`flex items-center space-x-3 flex-1 ${
+                        className={`flex items-center space-x-2 md:space-x-3 flex-1 ${
                           participant.hasResponded
                             ? 'cursor-pointer hover:opacity-80'
                             : 'cursor-default'
                         }`}
                         onClick={() => participant.hasResponded && toggleParticipant(participant.id)}
                       >
-                        <div className={`w-3 h-3 rounded-full ${
+                        <div className={`w-2.5 h-2.5 md:w-3 md:h-3 rounded-full ${
                           participant.hasResponded ? 'bg-green-400' : 'bg-gray-400'
                         }`} />
                         <div>
-                          <div className="font-medium text-white flex items-center gap-2">
+                          <div className="text-sm md:text-base font-medium text-white flex items-center gap-1.5 md:gap-2">
                             {participant.name}
                             {participant.smsOptIn && (
-                              <span className="text-xs bg-blue-900/50 text-blue-300 px-2 py-0.5 rounded border border-blue-500/30" title="Opted in to SMS notifications">
-                                📱 SMS
+                              <span className="text-xs bg-blue-900/50 text-blue-300 px-1.5 md:px-2 py-0.5 rounded border border-blue-500/30" title="Opted in to SMS notifications">
+                                📱 <span className="hidden md:inline">SMS</span>
                               </span>
                             )}
                             {participant.hasResponded && (
-                              <span className="text-gray-400 text-sm">
+                              <span className="text-gray-400 text-xs md:text-sm">
                                 {isExpanded ? '▼' : '▶'}
                               </span>
                             )}
                           </div>
-                          <div className="text-sm text-gray-400">
+                          <div className="text-xs md:text-sm text-gray-400">
                             {participant.phoneNumber || 'No phone number'}
                           </div>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2 md:gap-3">
                         <div className="text-right">
                           {participant.hasResponded ? (
                             <div>
-                              <div className="text-green-400 font-medium">✓ Responded</div>
+                              <div className="text-xs md:text-sm text-green-400 font-medium">✓ <span className="hidden md:inline">Responded</span></div>
                               <div className="text-xs text-gray-400">
-                                {participant.responseCount} time{participant.responseCount !== 1 ? 's' : ''} selected
+                                {participant.responseCount} time{participant.responseCount !== 1 ? 's' : ''}
                               </div>
                             </div>
                           ) : (
-                            <div className="text-gray-400">Pending</div>
+                            <div className="text-xs md:text-sm text-gray-400">Pending</div>
                           )}
                         </div>
                         <button
@@ -621,10 +611,11 @@ Looking forward to seeing everyone there!`;
                             e.stopPropagation();
                             setDeleteParticipantConfirmation({ id: participant.id, name: participant.name });
                           }}
-                          className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-sm rounded transition-colors"
+                          className="px-3 py-1.5 md:px-3 md:py-1.5 bg-red-600 hover:bg-red-700 text-white text-sm rounded transition-colors"
                           title="Remove participant"
                         >
-                          Remove
+                          <span className="hidden md:inline">Remove</span>
+                          <span className="md:hidden">−</span>
                         </button>
                       </div>
                     </div>
@@ -655,6 +646,16 @@ Looking forward to seeing everyone there!`;
             </div>
           </div>
         </div>
+
+        {/* Availability Visualization */}
+        {participants && participants.length > 0 && (
+          <div className="mt-8">
+            <AvailabilityVisualization
+              event={event}
+              participants={participants}
+            />
+          </div>
+        )}
 
         {/* Most Popular Times */}
         {data.popularTimes && data.popularTimes.length > 0 ? (
@@ -801,19 +802,6 @@ Looking forward to seeing everyone there!`;
                 ✅
               </div>
             </div>
-          </div>
-        )}
-
-        {/* Action Buttons */}
-        {!event.isFinalized && (
-          <div className="mt-8 flex gap-4">
-            <button className="px-6 py-3 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors">
-              📧 Send Reminders
-            </button>
-            
-            <button className="px-6 py-3 bg-gray-600 text-white font-medium rounded-md hover:bg-gray-700 transition-colors">
-              📋 Export Results
-            </button>
           </div>
         )}
         </div>
