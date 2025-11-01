@@ -36,6 +36,10 @@ const customJestConfig = {
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
+  // Allow Jest to transform ESM packages like date-fns
+  transformIgnorePatterns: [
+    'node_modules/(?!(date-fns)/)',
+  ],
   testTimeout: 30000,
   coverageReporters: ['text', 'lcov', 'html'],
   coverageThreshold: {
