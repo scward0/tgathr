@@ -65,8 +65,9 @@ export function AvailabilityVisualization({ event, participants }: AvailabilityV
     const slotStart = typeof slot.startTime === 'string' ? parseISO(slot.startTime) : slot.startTime;
     const slotEnd = typeof slot.endTime === 'string' ? parseISO(slot.endTime) : slot.endTime;
 
-    const slotStartHour = slotStart.getHours();
-    const slotEndHour = slotEnd.getHours();
+    // Use UTC hours since API returns UTC timestamps
+    const slotStartHour = slotStart.getUTCHours();
+    const slotEndHour = slotEnd.getUTCHours();
 
     // For multi-day (all day), any time slot counts
     if (periodStart === 0 && periodEnd === 24) {
@@ -190,7 +191,7 @@ export function AvailabilityVisualization({ event, participants }: AvailabilityV
                   </td>
                   {timeSlots.map((slot, slotIdx) => {
                     const available = getAvailabilityForCell(date, slot);
-                    const isSelected = selectedCell?.date === date && selectedCell?.slotIndex === slotIdx;
+                    const isSelected = selectedCell && isSameDay(selectedCell.date, date) && selectedCell.slotIndex === slotIdx;
 
                     return (
                       <td
