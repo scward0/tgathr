@@ -1,12 +1,12 @@
 import {
-    format,
-    addMinutes,
-    eachDayOfInterval,
-    isWithinInterval,
-    startOfDay,
-    endOfDay,
-    isSameDay
-  } from 'date-fns';
+  format,
+  addMinutes,
+  eachDayOfInterval,
+  isWithinInterval,
+  startOfDay,
+  endOfDay,
+  isSameDay
+} from 'date-fns';
   
   interface TimeSlot {
     startTime: Date;
