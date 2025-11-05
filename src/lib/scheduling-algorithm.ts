@@ -373,9 +373,9 @@ import {
       if (recommendation.startTime.getMinutes() === 0) {
         score += 5;
       }
-      
+
       // Bonus for weekend vs weekday based on timing preference
-      const isWeekend = [0, 6].includes(recommendation.startTime.getUTCDay());
+      const isWeekend = [0, 6].includes(recommendation.startTime.getDay());
       if (isWeekend) {
         score += 10;
       }
@@ -403,9 +403,9 @@ import {
       // Bonus for having availability for all required days
       const daysCoverage = params.availableDays / params.requiredDays;
       score += daysCoverage * 30;
-      
+
       // Weekend preference bonus
-      const isStartWeekend = [0, 6].includes(params.startDay.getUTCDay());
+      const isStartWeekend = [0, 6].includes(params.startDay.getDay());
       if (isStartWeekend && this.event.timingPreference !== 'include-weekdays') {
         score += 15;
       }
@@ -448,7 +448,7 @@ import {
     }
     
     private isTimeInPreferredRange(time: Date): boolean {
-      const hour = time.getUTCHours(); // Use UTC hours to match test data
+      const hour = time.getHours(); // Use local hours to match form submission
 
       switch (this.event.preferredTime) {
         case 'morning':
