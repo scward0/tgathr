@@ -65,9 +65,9 @@ export function AvailabilityVisualization({ event, participants }: AvailabilityV
     const slotStart = typeof slot.startTime === 'string' ? parseISO(slot.startTime) : slot.startTime;
     const slotEnd = typeof slot.endTime === 'string' ? parseISO(slot.endTime) : slot.endTime;
 
-    // Use UTC hours since API returns UTC timestamps
-    const slotStartHour = slotStart.getUTCHours();
-    const slotEndHour = slotEnd.getUTCHours();
+    // Use local hours to match the form submission timezone
+    const slotStartHour = slotStart.getHours();
+    const slotEndHour = slotEnd.getHours();
 
     // For multi-day (all day), any time slot counts
     if (periodStart === 0 && periodEnd === 24) {
