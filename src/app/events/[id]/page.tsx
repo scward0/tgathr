@@ -30,7 +30,9 @@ export default function EventDashboard({ params }: DashboardPageProps) {
   // Fetch event data function
   const fetchEventData = async () => {
     try {
-      const response = await fetch(`/api/events/${params.id}`);
+      // Get user's timezone offset in minutes (e.g., -480 for PST)
+      const timezoneOffset = new Date().getTimezoneOffset();
+      const response = await fetch(`/api/events/${params.id}?tzOffset=${timezoneOffset}`);
       if (!response.ok) {
         notFound();
       }

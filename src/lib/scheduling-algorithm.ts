@@ -49,11 +49,41 @@ import {
     private event: EventDetails;
     private participants: Participant[];
     private respondedParticipants: Participant[];
-  
-    constructor(event: EventDetails, participants: Participant[]) {
+    private timezoneOffsetMinutes: number;
+
+    constructor(event: EventDetails, participants: Participant[], timezoneOffsetMinutes: number = 0) {
       this.event = event;
       this.participants = participants;
       this.respondedParticipants = participants.filter(p => p.hasResponded);
+      this.timezoneOffsetMinutes = timezoneOffsetMinutes;
+    }
+
+    /**
+     * Convert UTC hours to local hours based on timezone offset
+     */
+    private getLocalHour(date: Date): number {
+      const utcHour = date.getUTCHours();
+      const utcMinute = date.getUTCMinutes();
+      const totalUtcMinutes = utcHour * 60 + utcMinute;
+      const localMinutes = totalUtcMinutes - this.timezoneOffsetMinutes;
+      return Math.floor((localMinutes + 1440) % 1440 / 60); // Handle wrap-around
+    }
+
+    /**
+     * Get day of week in local timezone
+     */
+    private getLocalDay(date: Date): number {
+      const utcDay = date.getUTCDay();
+      const utcHour = date.getUTCHours();
+      const offsetHours = Math.floor(this.timezoneOffsetMinutes / 60);
+      const adjustedHour = utcHour - offsetHours;
+
+      if (adjustedHour < 0) {
+        return (utcDay - 1 + 7) % 7;
+      } else if (adjustedHour >= 24) {
+        return (utcDay + 1) % 7;
+      }
+      return utcDay;
     }
   
     /**
@@ -370,12 +400,12 @@ import {
       }
       
       // Bonus for round times (e.g., 7:00 PM vs 7:30 PM)
-      if (recommendation.startTime.getMinutes() === 0) {
+      if (recommendation.startTime.getUTCMinutes() === 0) {
         score += 5;
       }
 
       // Bonus for weekend vs weekday based on timing preference
-      const isWeekend = [0, 6].includes(recommendation.startTime.getDay());
+      const isWeekend = [0, 6].includes(this.getLocalDay(recommendation.startTime));
       if (isWeekend) {
         score += 10;
       }
@@ -405,7 +435,7 @@ import {
       score += daysCoverage * 30;
 
       // Weekend preference bonus
-      const isStartWeekend = [0, 6].includes(params.startDay.getDay());
+      const isStartWeekend = [0, 6].includes(this.getLocalDay(params.startDay));
       if (isStartWeekend && this.event.timingPreference !== 'include-weekdays') {
         score += 15;
       }
@@ -448,7 +478,7 @@ import {
     }
     
     private isTimeInPreferredRange(time: Date): boolean {
-      const hour = time.getHours(); // Use local hours to match form submission
+      const hour = this.getLocalHour(time); // Use local hours based on timezone offset
 
       switch (this.event.preferredTime) {
         case 'morning':

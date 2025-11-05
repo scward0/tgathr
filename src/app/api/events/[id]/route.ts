@@ -15,6 +15,10 @@ export async function GET(request: Request, { params }: RouteParams) {
   try {
     const { prisma } = await import('@/lib/prisma');
     const { SchedulingAlgorithm } = await import('@/lib/scheduling-algorithm');
+
+    // Extract timezone offset from query params (in minutes)
+    const url = new URL(request.url);
+    const timezoneOffset = parseInt(url.searchParams.get('tzOffset') || '0', 10);
     
     // Your existing GET logic here - keep it exactly the same
     const event = await prisma.event.findUnique({
@@ -71,7 +75,7 @@ export async function GET(request: Request, { params }: RouteParams) {
       })
       .sort((a, b) => b.participantCount - a.participantCount);
 
-    // Run the smart algorithm
+    // Run the smart algorithm with timezone offset
     const algorithm = new SchedulingAlgorithm(
       {
         id: event.id,
@@ -84,16 +88,17 @@ export async function GET(request: Request, { params }: RouteParams) {
         eventLength: event.eventLength || undefined,
         timingPreference: event.timingPreference || undefined,
       },
-      event.participants.map((p: { 
-        id: string; 
-        name: string; 
-        timeSlots: any[] 
+      event.participants.map((p: {
+        id: string;
+        name: string;
+        timeSlots: any[]
       }) => ({
         id: p.id,
         name: p.name,
         hasResponded: p.timeSlots.length > 0,
         timeSlots: p.timeSlots,
-      }))
+      })),
+      timezoneOffset // Pass timezone offset to algorithm
     );
 
     const smartRecommendations = algorithm.findOptimalTimes();
