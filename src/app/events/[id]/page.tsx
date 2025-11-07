@@ -134,16 +134,19 @@ Looking forward to seeing everyone! 🎉`;
       : `${format(new Date(data.event.finalStartDate), 'MMMM d')} - ${format(new Date(data.event.finalEndDate), 'MMMM d, yyyy')}`;
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
+    const eventPageUrl = data.event.shareToken
+      ? `${appUrl}/e/${data.event.shareToken}`
+      : null;
     const calendarUrl = data.event.shareToken
       ? `${appUrl}/api/public/events/${data.event.shareToken}/calendar`
       : null;
 
-    const message = calendarUrl
+    const message = eventPageUrl
       ? `🎉 "${data.event.name}" is confirmed! 🎉
 
 📅 Date/Time: ${dateText}
 
-📥 Add to your calendar: ${calendarUrl}
+🔗 View event details & add to calendar: ${eventPageUrl}
 
 Looking forward to seeing everyone there!`
       : `🎉 "${data.event.name}" is confirmed! 🎉
