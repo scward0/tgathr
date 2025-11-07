@@ -110,19 +110,43 @@ export async function sendEventConfirmation(
   startDate: Date,
   endDate: Date,
   customMessage: string,
-  eventDetailsUrl: string
+  eventDetailsUrl: string,
+  shareToken?: string
 ) {
+  // Format date for SMS (compact format)
+  const dateStr = startDate.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  });
+  const timeStr = startDate.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    timeZoneName: 'short'
+  });
+
+  // Build calendar download URL if shareToken provided
+  const calendarUrl = shareToken
+    ? `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/public/events/${shareToken}/calendar`
+    : null;
+
+  // Construct SMS message with calendar link
+  const message = calendarUrl
+    ? `${eventName} confirmed! 📅 ${dateStr} at ${timeStr}. Add to calendar: ${calendarUrl} View details: ${eventDetailsUrl} Reply STOP to opt out.`
+    : `${eventName} confirmed! 📅 ${dateStr} at ${timeStr}. View details: ${eventDetailsUrl} Reply STOP to opt out.`;
+
   if (isLocalDev) {
     // Mock mode for local development
     console.log(`📱 MOCK CONFIRMATION SMS would be sent to ${participantPhone}:`);
     console.log(`   To: ${participantName}`);
-    console.log(`   Message: ${customMessage}`);
+    console.log(`   Message: ${message}`);
     console.log(`   Event URL: ${eventDetailsUrl}`);
-    
-    return { 
-      success: true, 
+    console.log(`   Calendar URL: ${calendarUrl || 'N/A'}`);
+
+    return {
+      success: true,
       sid: `CONFIRM_MOCK_${Date.now()}`,
-      message: customMessage,
+      message: message,
       recipient: participantName
     };
   }
@@ -130,16 +154,16 @@ export async function sendEventConfirmation(
   // Real SMS for production
   try {
     const result = await client.messages.create({
-      body: customMessage,
+      body: message,
       from: process.env.TWILIO_PHONE_NUMBER,
       to: participantPhone,
     });
 
     console.log(`📱 Confirmation SMS sent to ${participantPhone}: ${result.sid}`);
-    return { 
-      success: true, 
+    return {
+      success: true,
       sid: result.sid,
-      message: customMessage,
+      message: message,
       recipient: participantName
     };
   } catch (error) {

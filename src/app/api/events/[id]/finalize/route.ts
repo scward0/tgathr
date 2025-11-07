@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { sendEventConfirmation } from '@/lib/email';
+import { sendEventConfirmation as sendEventConfirmationSMS } from '@/lib/sms';
 
 interface RouteParams {
   params: {
@@ -27,8 +28,22 @@ export async function POST(request: Request, { params }: RouteParams) {
         finalEndDate: new Date(body.finalEndDate),
         isFinalized: true,
       },
-      include: {
-        participants: true,
+      select: {
+        id: true,
+        name: true,
+        shareToken: true,
+        finalStartDate: true,
+        finalEndDate: true,
+        isFinalized: true,
+        participants: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phoneNumber: true,
+            smsOptIn: true,
+          },
+        },
       },
     });
 
@@ -67,6 +82,39 @@ export async function POST(request: Request, { params }: RouteParams) {
       }
     });
 
+    // Send confirmation SMS to all participants who have opted in for SMS
+    const smsPromises = updatedEvent.participants
+      .filter(participant => participant.smsOptIn && participant.phoneNumber) // Only send to participants with SMS opt-in
+      .map(participant =>
+        sendEventConfirmationSMS(
+          participant.phoneNumber!,
+          participant.name,
+          updatedEvent.name,
+          'Event Organizer',
+          updatedEvent.finalStartDate!,
+          updatedEvent.finalEndDate!,
+          '', // Custom message not used in SMS version
+          `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/e/${updatedEvent.shareToken}`,
+          updatedEvent.shareToken // Pass shareToken for calendar download link
+        )
+      );
+
+    // Wait for all SMS to be sent
+    const smsResults = await Promise.allSettled(smsPromises);
+
+    // Log SMS results
+    const smsSuccessCount = smsResults.filter(result => result.status === 'fulfilled').length;
+    const totalSMS = smsResults.length;
+
+    console.log(`📱 Sent ${smsSuccessCount}/${totalSMS} confirmation SMS messages`);
+
+    // Log any SMS failures (but don't fail the request)
+    smsResults.forEach((result, index) => {
+      if (result.status === 'rejected') {
+        console.error(`Failed to send SMS to participant ${index}:`, result.reason);
+      }
+    });
+
     return NextResponse.json({
       success: true,
       event: {
@@ -75,6 +123,7 @@ export async function POST(request: Request, { params }: RouteParams) {
         isFinalized: updatedEvent.isFinalized,
       },
       emailsSent: successCount,
+      smsSent: smsSuccessCount,
       totalParticipants: updatedEvent.participants.length,
     });
 
