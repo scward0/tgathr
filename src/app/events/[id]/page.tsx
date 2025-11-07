@@ -26,6 +26,7 @@ export default function EventDashboard({ params }: DashboardPageProps) {
   const [showSuccess, setShowSuccess] = useState(justCreated);
   const [deleteParticipantConfirmation, setDeleteParticipantConfirmation] = useState<{ id: string; name: string } | null>(null);
   const [deletingParticipant, setDeletingParticipant] = useState(false);
+  const [downloadingCalendar, setDownloadingCalendar] = useState(false);
 
   // Fetch event data function
   const fetchEventData = async () => {
@@ -132,7 +133,20 @@ Looking forward to seeing everyone! 🎉`;
       ? `${format(new Date(data.event.finalStartDate), 'EEEE, MMMM d, yyyy')} at ${format(new Date(data.event.finalStartDate), 'h:mm a')}`
       : `${format(new Date(data.event.finalStartDate), 'MMMM d')} - ${format(new Date(data.event.finalEndDate), 'MMMM d, yyyy')}`;
 
-    const message = `🎉 "${data.event.name}" is confirmed! 🎉
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
+    const calendarUrl = data.event.shareToken
+      ? `${appUrl}/api/public/events/${data.event.shareToken}/calendar`
+      : null;
+
+    const message = calendarUrl
+      ? `🎉 "${data.event.name}" is confirmed! 🎉
+
+📅 Date/Time: ${dateText}
+
+📥 Add to your calendar: ${calendarUrl}
+
+Looking forward to seeing everyone there!`
+      : `🎉 "${data.event.name}" is confirmed! 🎉
 
 📅 Date/Time: ${dateText}
 
@@ -144,6 +158,43 @@ Looking forward to seeing everyone there!`;
       setTimeout(() => setCopiedFinalizationMessage(false), 2000);
     } catch (error) {
       console.error('Failed to copy finalization message:', error);
+    }
+  };
+
+  // Handle add to calendar
+  const handleAddToCalendar = async () => {
+    if (!data?.event?.shareToken) {
+      return;
+    }
+
+    setDownloadingCalendar(true);
+
+    try {
+      const response = await fetch(`/api/public/events/${data.event.shareToken}/calendar`);
+
+      if (!response.ok) {
+        throw new Error('Failed to generate calendar file');
+      }
+
+      // Create blob from response
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+
+      // Create download link and trigger download
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${data.event.name.replace(/[^a-zA-Z0-9\s-]/g, '').replace(/\s+/g, '-')}.ics`;
+      document.body.appendChild(a);
+      a.click();
+
+      // Cleanup
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Calendar export failed:', error);
+      alert('Failed to download calendar file. Please try again.');
+    } finally {
+      setDownloadingCalendar(false);
     }
   };
 
@@ -349,6 +400,29 @@ Looking forward to seeing everyone there!`;
                   : `${format(new Date(event.finalStartDate), 'MMMM d')} - ${format(new Date(event.finalEndDate), 'MMMM d, yyyy')}`
                 }
               </div>
+
+              {/* Add to Calendar Button */}
+              <button
+                onClick={handleAddToCalendar}
+                disabled={downloadingCalendar}
+                className="w-full px-4 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 text-white rounded font-medium text-sm transition flex items-center justify-center gap-2 mb-3"
+              >
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                  />
+                </svg>
+                {downloadingCalendar ? 'Downloading...' : 'Add to Calendar'}
+              </button>
 
               {/* Copy Finalization Message Button */}
               <div className="mt-3 pt-3 border-t border-green-700/50">
