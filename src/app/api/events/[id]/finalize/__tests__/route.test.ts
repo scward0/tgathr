@@ -15,6 +15,10 @@ jest.mock('@/lib/email', () => ({
   sendEventConfirmation: jest.fn()
 }));
 
+jest.mock('@/lib/sms', () => ({
+  sendEventConfirmation: jest.fn()
+}));
+
 describe('POST /api/events/[id]/finalize', () => {
   const mockRequest = (body: any) => {
     return {
@@ -43,12 +47,24 @@ describe('POST /api/events/[id]/finalize', () => {
       const mockEvent = {
         ...testFixtures.event.basic,
         id: 'event-123',
+        name: 'Team Meeting',
+        shareToken: 'abc123',
         finalStartDate,
         finalEndDate,
         isFinalized: true,
         participants: [
-          { ...testFixtures.participant.basic, email: 'john@example.com' },
-          { ...testFixtures.participant.multiple[0], email: 'alice@example.com' }
+          {
+            ...testFixtures.participant.basic,
+            email: 'john@example.com',
+            phoneNumber: null,
+            smsOptIn: false
+          },
+          {
+            ...testFixtures.participant.multiple[0],
+            email: 'alice@example.com',
+            phoneNumber: null,
+            smsOptIn: false
+          }
         ]
       };
 
@@ -77,8 +93,22 @@ describe('POST /api/events/[id]/finalize', () => {
           finalEndDate: expect.any(Date),
           isFinalized: true
         },
-        include: {
-          participants: true
+        select: {
+          id: true,
+          name: true,
+          shareToken: true,
+          finalStartDate: true,
+          finalEndDate: true,
+          isFinalized: true,
+          participants: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              phoneNumber: true,
+              smsOptIn: true,
+            },
+          },
         }
       });
     });
