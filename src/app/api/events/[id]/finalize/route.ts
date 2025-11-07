@@ -37,7 +37,7 @@ export async function POST(request: Request, { params }: RouteParams) {
     // Send confirmation emails to all participants who have email addresses
     const emailPromises = updatedEvent.participants
       .filter(participant => participant.email) // Only send to participants with email
-      .map(participant => 
+      .map(participant =>
         sendEventConfirmation(
           participant.email!,
           participant.name,
@@ -46,7 +46,8 @@ export async function POST(request: Request, { params }: RouteParams) {
           updatedEvent.finalStartDate!,
           updatedEvent.finalEndDate!,
           `Your event "${updatedEvent.name}" has been finalized! Please save the date.`,
-          `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/events/${updatedEvent.id}`
+          `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/events/${updatedEvent.id}`,
+          updatedEvent.id // Pass event ID for ICS generation
         )
       );
 

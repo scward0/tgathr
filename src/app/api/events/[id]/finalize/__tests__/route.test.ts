@@ -184,7 +184,8 @@ describe('POST /api/events/[id]/finalize', () => {
         finalStartDate,
         finalEndDate,
         'Your event "Team Meeting" has been finalized! Please save the date.',
-        'http://localhost:3000/events/event-123'
+        'http://localhost:3000/events/event-123',
+        'event-123'
       );
     });
 
@@ -462,7 +463,8 @@ describe('POST /api/events/[id]/finalize', () => {
         expect.any(Date),
         expect.any(Date),
         expect.any(String),
-        'https://tgathr.app/events/event-123'
+        'https://tgathr.app/events/event-123',
+        'event-123'
       );
     });
   });

@@ -52,6 +52,8 @@ export async function GET(request: Request, { params }: RouteParams) {
         eventLength: event.eventLength,
         timingPreference: event.timingPreference,
         isFinalized: event.isFinalized,
+        finalStartDate: event.finalStartDate,
+        finalEndDate: event.finalEndDate,
         expiresAt: event.expiresAt,
         isExpired,
         participantCount: event.participants.length,

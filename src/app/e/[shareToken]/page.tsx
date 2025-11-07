@@ -21,6 +21,8 @@ interface EventData {
   eventLength?: string;
   timingPreference?: string;
   isFinalized: boolean;
+  finalStartDate?: string | null;
+  finalEndDate?: string | null;
   isExpired: boolean;
   participantCount: number;
 }
@@ -32,6 +34,7 @@ export default function PublicEventPage({ params }: EventPageProps) {
   const [error, setError] = useState<string | null>(null);
   const [registering, setRegistering] = useState(false);
   const [checkingExistingRegistration, setCheckingExistingRegistration] = useState(true);
+  const [downloadingCalendar, setDownloadingCalendar] = useState(false);
 
   // Registration form state
   const [name, setName] = useState('');
@@ -142,6 +145,42 @@ export default function PublicEventPage({ params }: EventPageProps) {
     }
   };
 
+  const handleAddToCalendar = async () => {
+    if (!event) {
+      return;
+    }
+
+    setDownloadingCalendar(true);
+
+    try {
+      const response = await fetch(`/api/public/events/${params.shareToken}/calendar`);
+
+      if (!response.ok) {
+        throw new Error('Failed to generate calendar file');
+      }
+
+      // Create blob from response
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+
+      // Create download link and trigger download
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${event.name.replace(/[^a-zA-Z0-9\s-]/g, '').replace(/\s+/g, '-')}.ics`;
+      document.body.appendChild(a);
+      a.click();
+
+      // Cleanup
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (err) {
+      console.error('Calendar export failed:', err);
+      setError('Failed to download calendar file. Please try again.');
+    } finally {
+      setDownloadingCalendar(false);
+    }
+  };
+
   if (loading || checkingExistingRegistration) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
@@ -182,7 +221,52 @@ export default function PublicEventPage({ params }: EventPageProps) {
         </div>
 
         {/* Event Status Warnings */}
-        {event.isFinalized && (
+        {event.isFinalized && event.finalStartDate && event.finalEndDate && (
+          <div className="bg-blue-900/30 border border-blue-500 text-blue-300 px-6 py-4 rounded-lg mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <p className="font-semibold text-lg mb-1">This event has been finalized</p>
+                <p className="text-blue-200">
+                  {new Date(event.finalStartDate).toLocaleDateString(undefined, {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                  })}{' '}
+                  at{' '}
+                  {new Date(event.finalStartDate).toLocaleTimeString(undefined, {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    timeZoneName: 'short',
+                  })}
+                </p>
+              </div>
+              <button
+                onClick={handleAddToCalendar}
+                disabled={downloadingCalendar}
+                className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 text-white font-semibold py-2 px-4 rounded-lg transition whitespace-nowrap flex items-center justify-center gap-2"
+              >
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                  />
+                </svg>
+                {downloadingCalendar ? 'Downloading...' : 'Add to Calendar'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {event.isFinalized && (!event.finalStartDate || !event.finalEndDate) && (
           <div className="bg-blue-900/30 border border-blue-500 text-blue-300 px-4 py-3 rounded-lg mb-6">
             This event has already been finalized.
           </div>

@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import { generateICSBuffer, generateICSFilename } from './calendar/icsGenerator';
 
 // Create transporter with Gmail or other email service
 const transporter = nodemailer.createTransport({
@@ -10,7 +11,7 @@ const transporter = nodemailer.createTransport({
 });
 
 // Check if we're in local development
-const isLocalDev = process.env.NODE_ENV === 'development' || 
+const isLocalDev = process.env.NODE_ENV === 'development' ||
                   !process.env.EMAIL_USER;
 
 export async function sendEventInvitation(
@@ -88,7 +89,8 @@ export async function sendEventConfirmation(
   startDate: Date,
   endDate: Date,
   customMessage: string,
-  eventDetailsUrl: string
+  eventDetailsUrl: string,
+  eventId?: string
 ) {
   const subject = `Event Confirmed: ${eventName}`;
   const html = `
@@ -107,12 +109,34 @@ export async function sendEventConfirmation(
         <p><strong>Message from ${creatorName}:</strong></p>
         <p style="margin: 0;">${customMessage}</p>
       </div>
+      <p style="margin: 20px 0;">📅 A calendar file (.ics) is attached to this email. You can open it to add this event to your calendar app.</p>
       <a href="${eventDetailsUrl}" style="display: inline-block; padding: 12px 24px; background-color: #4A90E2; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0;">View Event Details</a>
       <p>If the button doesn't work, copy and paste this link into your browser:</p>
       <p><a href="${eventDetailsUrl}">${eventDetailsUrl}</a></p>
       <p>Thanks!</p>
     </div>
   `;
+
+  // Generate ICS file for calendar attachment
+  let icsBuffer: Buffer | null = null;
+  let icsFilename = 'event.ics';
+
+  if (eventId) {
+    try {
+      icsBuffer = generateICSBuffer({
+        eventName,
+        startDateTime: startDate,
+        endDateTime: endDate,
+        organizerName: creatorName,
+        eventId,
+        attendeeEmails: [participantEmail],
+      });
+      icsFilename = generateICSFilename(eventName);
+    } catch (error) {
+      console.error('Failed to generate ICS file:', error);
+      // Continue without attachment if generation fails
+    }
+  }
 
   if (isLocalDev) {
     // Mock mode for local development
@@ -121,6 +145,7 @@ export async function sendEventConfirmation(
     console.log(`   Subject: ${subject}`);
     console.log(`   Message: ${customMessage}`);
     console.log(`   Event URL: ${eventDetailsUrl}`);
+    console.log(`   ICS Attachment: ${icsBuffer ? icsFilename : 'None'}`);
 
     return {
       success: true,
@@ -132,13 +157,26 @@ export async function sendEventConfirmation(
 
   // Real email for production
   try {
-    const result = await transporter.sendMail({
+    const mailOptions: any = {
       from: process.env.EMAIL_USER,
       to: participantEmail,
       subject: subject,
       text: customMessage,
       html: html,
-    });
+    };
+
+    // Add ICS attachment if generated successfully
+    if (icsBuffer) {
+      mailOptions.attachments = [
+        {
+          filename: icsFilename,
+          content: icsBuffer,
+          contentType: 'text/calendar; charset=utf-8',
+        },
+      ];
+    }
+
+    const result = await transporter.sendMail(mailOptions);
 
     console.log(`📧 Confirmation email sent to ${participantEmail}: ${result.messageId}`);
     return {
