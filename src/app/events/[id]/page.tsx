@@ -137,9 +137,6 @@ Looking forward to seeing everyone! 🎉`;
     const eventPageUrl = data.event.shareToken
       ? `${appUrl}/e/${data.event.shareToken}`
       : null;
-    const calendarUrl = data.event.shareToken
-      ? `${appUrl}/api/public/events/${data.event.shareToken}/calendar`
-      : null;
 
     const message = eventPageUrl
       ? `🎉 "${data.event.name}" is confirmed! 🎉
