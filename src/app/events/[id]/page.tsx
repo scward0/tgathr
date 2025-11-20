@@ -5,6 +5,7 @@ import { notFound, useSearchParams } from 'next/navigation';
 import { format } from 'date-fns';
 import { AvailabilityVisualization } from '@/components/AvailabilityVisualization';
 import { Navigation } from '@/components/Navigation';
+import { FinalizationConfirmationDialog } from '@/components/FinalizationConfirmationDialog';
 
 interface DashboardPageProps {
   params: {
@@ -27,6 +28,13 @@ export default function EventDashboard({ params }: DashboardPageProps) {
   const [deleteParticipantConfirmation, setDeleteParticipantConfirmation] = useState<{ id: string; name: string } | null>(null);
   const [deletingParticipant, setDeletingParticipant] = useState(false);
   const [downloadingCalendar, setDownloadingCalendar] = useState(false);
+  const [finalizationDialog, setFinalizationDialog] = useState<{
+    startTime: string;
+    endTime: string;
+    participantNames: string[];
+    availableCount: number;
+    unavailableCount: number;
+  } | null>(null);
 
   // Fetch event data function
   const fetchEventData = async () => {
@@ -199,8 +207,8 @@ Looking forward to seeing everyone there!`;
   };
 
   // Handle event finalization
-  const handleFinalize = async (startTime: string, endTime: string, participantNames: string[]) => {
-    if (!confirm('Are you sure you want to finalize this event? This action cannot be undone.')) {
+  const handleFinalize = async () => {
+    if (!finalizationDialog) {
       return;
     }
 
@@ -213,9 +221,10 @@ Looking forward to seeing everyone there!`;
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          finalStartDate: startTime,
-          finalEndDate: endTime,
-          selectedParticipants: participantNames,
+          finalStartDate: finalizationDialog.startTime,
+          finalEndDate: finalizationDialog.endTime,
+          selectedParticipants: finalizationDialog.participantNames,
+          source: 'smart-recommendations',
         }),
       });
 
@@ -225,14 +234,35 @@ Looking forward to seeing everyone there!`;
 
       await response.json();
 
-      // Refresh the data to show finalized state
+      // Close dialog and refresh the data to show finalized state
+      setFinalizationDialog(null);
       window.location.reload();
 
     } catch (_error) {
       alert('Failed to finalize event. Please try again.');
+      setFinalizationDialog(null);
     } finally {
       setFinalizing(false);
     }
+  };
+
+  // Show finalization dialog
+  const showFinalizationDialog = (
+    startTime: string,
+    endTime: string,
+    participantNames: string[],
+    totalParticipants: number
+  ) => {
+    const availableCount = participantNames.length;
+    const unavailableCount = totalParticipants - availableCount;
+
+    setFinalizationDialog({
+      startTime,
+      endTime,
+      participantNames,
+      availableCount,
+      unavailableCount,
+    });
   };
 
   // Handle participant deletion
@@ -552,7 +582,12 @@ Looking forward to seeing everyone there!`;
                     {!event.isFinalized && (
                       <div className="pt-3 border-t border-gray-600">
                         <button
-                          onClick={() => handleFinalize(rec.startTime, rec.endTime, rec.participantNames)}
+                          onClick={() => showFinalizationDialog(
+                            rec.startTime,
+                            rec.endTime,
+                            rec.participantNames,
+                            stats.totalParticipants
+                          )}
                           disabled={finalizing}
                           className={`w-full px-4 py-2 rounded-md font-medium transition-colors disabled:opacity-50 ${
                             index === 0
@@ -900,6 +935,29 @@ Looking forward to seeing everyone there!`;
             </div>
           </div>
         </div>
+      )}
+
+      {/* Finalization Confirmation Dialog */}
+      {finalizationDialog && (
+        <FinalizationConfirmationDialog
+          isOpen={!!finalizationDialog}
+          onClose={() => setFinalizationDialog(null)}
+          onConfirm={handleFinalize}
+          date={new Date(finalizationDialog.startTime)}
+          timePeriodLabel={
+            event.eventType === 'single-day'
+              ? `${format(new Date(finalizationDialog.startTime), 'h:mm a')} - ${format(new Date(finalizationDialog.endTime), 'h:mm a')}`
+              : `${format(new Date(finalizationDialog.startTime), 'MMM d, yyyy')} - ${format(new Date(finalizationDialog.endTime), 'MMM d, yyyy')}`
+          }
+          timeRange={
+            event.eventType === 'single-day'
+              ? `${format(new Date(finalizationDialog.startTime), 'h:mm a')} - ${format(new Date(finalizationDialog.endTime), 'h:mm a')}`
+              : 'Multi-day event'
+          }
+          availableCount={finalizationDialog.availableCount}
+          unavailableCount={finalizationDialog.unavailableCount}
+          isLoading={finalizing}
+        />
       )}
     </div>
   );
