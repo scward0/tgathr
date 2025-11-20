@@ -13,6 +13,7 @@ jest.mock('next/navigation', () => ({
     replace: jest.fn(),
     back: jest.fn()
   }),
+  usePathname: () => '/events/event-123',
   useSearchParams: () => ({
     get: (key: string) => mockSearchParams.get(key),
   }),
@@ -24,6 +25,19 @@ jest.mock('next/link', () => {
     return <a href={href}>{children}</a>
   }
 })
+
+// Mock Stack authentication
+const mockSignOut = jest.fn()
+const mockUser = {
+  id: 'user-123',
+  displayName: 'Test User',
+  primaryEmail: 'test@example.com',
+  signOut: mockSignOut
+}
+
+jest.mock('@stackframe/stack', () => ({
+  useUser: jest.fn()
+}))
 
 // Mock fetch
 global.fetch = jest.fn()
@@ -41,7 +55,14 @@ jest.mock('date-fns', () => ({
   }
 }))
 
+// Import useUser after mocking
+import { useUser } from '@stackframe/stack'
+
 describe.skip('Event Dashboard - Response Analytics (US-011)', () => {
+  // Set up default mock return value for useUser
+  beforeEach(() => {
+    ;(useUser as jest.Mock).mockReturnValue(mockUser)
+  })
   const user = userEvent.setup()
 
   // Helper function to create mock event data

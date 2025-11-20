@@ -9,7 +9,9 @@ jest.mock('next/navigation', () => ({
     push: mockPush,
     replace: jest.fn(),
     back: jest.fn()
-  })
+  }),
+  usePathname: () => '/',
+  useSearchParams: () => new URLSearchParams()
 }))
 
 jest.mock('next/link', () => {
@@ -526,10 +528,13 @@ describe('Event Dashboard (Home Page)', () => {
       render(<Home />)
 
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: /sign out/i })).toBeInTheDocument()
+        const signOutButtons = screen.getAllByRole('button', { name: /sign out/i })
+        expect(signOutButtons.length).toBeGreaterThan(0)
       })
 
-      await user.click(screen.getByRole('button', { name: /sign out/i }))
+      // Click the first sign out button (desktop version)
+      const signOutButtons = screen.getAllByRole('button', { name: /sign out/i })
+      await user.click(signOutButtons[0])
 
       expect(mockSignOut).toHaveBeenCalled()
     })

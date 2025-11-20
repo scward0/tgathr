@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useUser } from '@stackframe/stack';
 import { useEffect, useState } from 'react';
+import { Navigation } from '@/components/Navigation';
 
 export const dynamic = 'force-dynamic';
 
@@ -259,19 +260,8 @@ export default function Home() {
   // Logged in - show dashboard
   return (
     <main className="min-h-screen bg-gray-900">
-      <nav className="flex justify-between items-center p-6 border-b border-gray-800">
-        <h1 className="text-2xl font-bold text-white">tgathr</h1>
-        <div className="flex items-center space-x-4">
-          <span className="text-gray-300">Welcome, {user?.displayName || user?.primaryEmail || 'User'}!</span>
-          <button
-            onClick={() => user.signOut()}
-            className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
-          >
-            Sign Out
-          </button>
-        </div>
-      </nav>
-      
+      <Navigation />
+
       <div className="max-w-6xl mx-auto px-6 py-8">
         <div className="text-center mb-12">
           <h2 className="text-3xl font-bold text-white mb-4">Welcome, {user?.displayName || user?.primaryEmail || 'User'}!</h2>
