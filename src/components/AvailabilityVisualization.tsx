@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { format, eachDayOfInterval, isSameDay, parseISO } from 'date-fns';
+import { format, eachDayOfInterval, isSameDay, parseISO, setHours, setMinutes } from 'date-fns';
+import { FinalizationConfirmationDialog } from './FinalizationConfirmationDialog';
 
 interface TimeSlot {
   startTime: string | Date;
@@ -19,9 +20,11 @@ interface Participant {
 
 interface AvailabilityVisualizationProps {
   event: {
+    id?: string;
     eventType: string;
     availabilityStartDate: string | Date;
     availabilityEndDate: string | Date;
+    isFinalized?: boolean;
   };
   participants: Participant[];
 }
@@ -34,6 +37,10 @@ interface TimeSlotGroup {
 
 export function AvailabilityVisualization({ event, participants }: AvailabilityVisualizationProps) {
   const [selectedCell, setSelectedCell] = useState<{ date: Date; slotIndex: number } | null>(null);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [isFinalizingCell, setIsFinalizingCell] = useState(false);
+  const [finalizationStatus, setFinalizationStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [finalizationError, setFinalizationError] = useState<string | null>(null);
 
   // Define time periods
   const timeSlots: TimeSlotGroup[] = event.eventType === 'single-day'
@@ -128,6 +135,87 @@ export function AvailabilityVisualization({ event, participants }: AvailabilityV
     }
     const percentage = availableCount / totalRespondents;
     return percentage >= 0.5 ? 'text-white font-semibold' : 'text-gray-300';
+  };
+
+  // Convert time period to time range string
+  const getTimeRangeString = (timeSlot: TimeSlotGroup): string => {
+    if (timeSlot.label === 'All Day') {
+      return 'All day';
+    }
+    const formatHour = (hour: number) => {
+      if (hour === 0) {
+        return '12am';
+      }
+      if (hour < 12) {
+        return `${hour}am`;
+      }
+      if (hour === 12) {
+        return '12pm';
+      }
+      return `${hour - 12}pm`;
+    };
+    return `${formatHour(timeSlot.startHour)} - ${formatHour(timeSlot.endHour)}`;
+  };
+
+  // Handle finalization
+  const handleFinalize = async () => {
+    if (!selectedCell || !event.id) {
+      return;
+    }
+
+    const timeSlot = timeSlots[selectedCell.slotIndex];
+    const startDate = setMinutes(setHours(selectedCell.date, timeSlot.startHour), 0);
+    const endDate = setMinutes(setHours(selectedCell.date, timeSlot.endHour), 0);
+
+    setIsFinalizingCell(true);
+    setFinalizationError(null);
+
+    try {
+      const response = await fetch(`/api/events/${event.id}/finalize`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          finalStartDate: startDate.toISOString(),
+          finalEndDate: endDate.toISOString(),
+          source: 'heatmap',
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to finalize event');
+      }
+
+      await response.json();
+
+      // Show success state
+      setFinalizationStatus('success');
+      setShowConfirmDialog(false);
+
+      // Auto-close modal and reload after 2 seconds
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
+    } catch (error) {
+      console.error('Finalization error:', error);
+      setFinalizationStatus('error');
+      setFinalizationError(error instanceof Error ? error.message : 'Failed to finalize event');
+      setShowConfirmDialog(false);
+    } finally {
+      setIsFinalizingCell(false);
+    }
+  };
+
+  // Handle finalize button click
+  const handleFinalizeClick = () => {
+    setShowConfirmDialog(true);
+  };
+
+  // Check if participation threshold is met
+  const meetsThreshold = (availableCount: number): boolean => {
+    return totalRespondents > 0 && (availableCount / totalRespondents) >= 0.5;
   };
 
   if (totalRespondents === 0) {
@@ -259,11 +347,82 @@ export function AvailabilityVisualization({ event, participants }: AvailabilityV
                       </div>
                     </div>
                   )}
+
+                  {/* Finalization Section */}
+                  {event.id && !event.isFinalized && (
+                    <div className="mt-4 pt-4 border-t border-gray-600">
+                      {finalizationStatus === 'success' ? (
+                        <div className="text-center py-3 bg-green-900/30 text-green-300 rounded-lg">
+                          ✓ Event finalized successfully! Reloading...
+                        </div>
+                      ) : finalizationStatus === 'error' ? (
+                        <div className="space-y-2">
+                          <div className="text-center py-3 bg-red-900/30 text-red-300 rounded-lg text-sm">
+                            {finalizationError || 'Failed to finalize event'}
+                          </div>
+                          <button
+                            onClick={() => setFinalizationStatus('idle')}
+                            className="w-full px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition-colors font-medium text-sm"
+                          >
+                            Try Again
+                          </button>
+                        </div>
+                      ) : meetsThreshold(available.length) ? (
+                        <button
+                          onClick={handleFinalizeClick}
+                          disabled={isFinalizingCell}
+                          className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm md:text-base flex items-center justify-center gap-2"
+                          aria-label={`Finalize event for ${available.length} of ${totalRespondents} participants`}
+                        >
+                          <span>🎯</span>
+                          <span>
+                            Finalize This Time - {available.length}/{totalRespondents} available
+                          </span>
+                        </button>
+                      ) : (
+                        <div className="space-y-2">
+                          <button
+                            disabled
+                            className="w-full px-4 py-3 bg-gray-600 text-gray-400 rounded-lg cursor-not-allowed font-medium text-sm md:text-base"
+                            aria-label="Finalization disabled due to insufficient participation"
+                          >
+                            Finalize This Time - {available.length}/{totalRespondents} available
+                          </button>
+                          <p className="text-xs text-gray-400 text-center">
+                            ⚠️ Insufficient participation (minimum 50% recommended)
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {event.isFinalized && (
+                    <div className="mt-4 pt-4 border-t border-gray-600">
+                      <div className="text-center py-3 bg-gray-600 text-gray-300 rounded-lg text-sm">
+                        Event already finalized
+                      </div>
+                    </div>
+                  )}
                 </>
               );
             })()}
           </div>
         </div>
+      )}
+
+      {/* Finalization Confirmation Dialog */}
+      {selectedCell && showConfirmDialog && (
+        <FinalizationConfirmationDialog
+          isOpen={showConfirmDialog}
+          onClose={() => setShowConfirmDialog(false)}
+          onConfirm={handleFinalize}
+          date={selectedCell.date}
+          timePeriodLabel={timeSlots[selectedCell.slotIndex].label}
+          timeRange={getTimeRangeString(timeSlots[selectedCell.slotIndex])}
+          availableCount={getAvailabilityForCell(selectedCell.date, timeSlots[selectedCell.slotIndex]).length}
+          unavailableCount={respondedParticipants.length - getAvailabilityForCell(selectedCell.date, timeSlots[selectedCell.slotIndex]).length}
+          isLoading={isFinalizingCell}
+        />
       )}
 
       <div className="mt-3 md:mt-4 text-xs text-gray-400 text-center">
