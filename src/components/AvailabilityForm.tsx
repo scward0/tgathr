@@ -274,8 +274,13 @@ const isSlotSelected = (date: Date, timeSlot: string) => {
       <button
         onClick={handleSubmit}
         disabled={selectedSlots.length === 0 || isSubmitting}
-        className="w-full px-6 py-3 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        className="w-full px-6 py-3 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+        aria-busy={isSubmitting}
+        aria-live="polite"
       >
+        {isSubmitting && (
+          <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" aria-hidden="true" />
+        )}
         {isSubmitting
           ? (isEditing ? 'Updating...' : 'Submitting...')
           : isEditing

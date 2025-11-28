@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { notFound } from 'next/navigation';
 import { AvailabilityForm } from '@/components/AvailabilityForm';
+import { ResponsePageSkeleton } from '@/components/ResponsePageSkeleton';
 
 interface ResponsePageProps {
   params: {
@@ -13,20 +14,23 @@ interface ResponsePageProps {
 export default function ResponsePage({ params }: ResponsePageProps) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [showLoading, setShowLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    const minDisplayTimer = setTimeout(() => setShowLoading(false), 300);
+
     async function fetchParticipantData() {
       try {
         const response = await fetch(`/api/participants/${params.token}`);
-        
+
         if (!response.ok) {
           if (response.status === 404) {
             notFound();
           }
           throw new Error('Failed to fetch participant data');
         }
-        
+
         const participantData = await response.json();
         setData(participantData);
       } catch (err) {
@@ -38,14 +42,12 @@ export default function ResponsePage({ params }: ResponsePageProps) {
     }
 
     fetchParticipantData();
+
+    return () => clearTimeout(minDisplayTimer);
   }, [params.token]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-white">Loading event data...</div>
-      </div>
-    );
+  if (loading || showLoading) {
+    return <ResponsePageSkeleton />;
   }
 
   if (error || !data) {

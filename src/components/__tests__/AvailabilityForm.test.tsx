@@ -126,4 +126,55 @@ describe('AvailabilityForm', () => {
     fireEvent.click(afternoonButtons[0]);
     expect(screen.getByText(/Selected Times \(2\):/)).toBeInTheDocument();
   });
+
+  it('should show loading spinner during form submission', async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ success: true }),
+    });
+
+    render(<AvailabilityForm event={mockEvent} participant={mockParticipant} />);
+
+    // Select a time slot
+    const morningButtons = screen.getAllByText('Morning');
+    fireEvent.click(morningButtons[0]);
+
+    // Click submit button
+    const submitButton = screen.getByRole('button', { name: /Submit Availability/i });
+    fireEvent.click(submitButton);
+
+    // Check that button shows loading state with "Submitting..." text
+    expect(screen.getByText('Submitting...')).toBeInTheDocument();
+
+    // Check that submit button has proper ARIA attributes during submission
+    expect(submitButton).toHaveAttribute('aria-busy', 'true');
+    expect(submitButton).toBeDisabled();
+  });
+
+  it('should have proper ARIA attributes on submit button', () => {
+    render(<AvailabilityForm event={mockEvent} participant={mockParticipant} />);
+
+    const submitButton = screen.getByRole('button', { name: /Submit Availability/i });
+
+    // Check ARIA attributes
+    expect(submitButton).toHaveAttribute('aria-live', 'polite');
+    expect(submitButton).not.toHaveAttribute('aria-busy', 'true');
+  });
+
+  it('should disable submit button when no slots selected', () => {
+    render(<AvailabilityForm event={mockEvent} participant={mockParticipant} />);
+
+    const submitButton = screen.getByRole('button', { name: /Submit Availability/i });
+    expect(submitButton).toBeDisabled();
+  });
+
+  it('should enable submit button when slots are selected', () => {
+    render(<AvailabilityForm event={mockEvent} participant={mockParticipant} />);
+
+    const morningButtons = screen.getAllByText('Morning');
+    fireEvent.click(morningButtons[0]);
+
+    const submitButton = screen.getByRole('button', { name: /Submit Availability \(1 times selected\)/i });
+    expect(submitButton).not.toBeDisabled();
+  });
 });

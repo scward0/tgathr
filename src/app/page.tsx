@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useUser } from '@stackframe/stack';
 import { useEffect, useState } from 'react';
 import { Navigation } from '@/components/Navigation';
+import { SkeletonCard } from '@/components/SkeletonCard';
 
 export const dynamic = 'force-dynamic';
 
@@ -77,6 +78,7 @@ export default function Home() {
   const user = useUser();
   const [events, setEvents] = useState<UserEvent[]>([]);
   const [eventsLoading, setEventsLoading] = useState(false);
+  const [showLoading, setShowLoading] = useState(false);
   const [debugInfo, setDebugInfo] = useState('Initializing...');
   const [loadingTimeout, setLoadingTimeout] = useState(false);
   const [filter, setFilter] = useState<FilterType>('all');
@@ -105,6 +107,11 @@ export default function Home() {
 
   const fetchUserEvents = async () => {
     setEventsLoading(true);
+    setShowLoading(true);
+
+    // Create promises for both the fetch and minimum display time
+    const minDisplayPromise = new Promise(resolve => setTimeout(resolve, 300));
+
     try {
       const response = await fetch('/api/events/my-events', {
         credentials: 'include'
@@ -114,10 +121,15 @@ export default function Home() {
         const data = await response.json();
         setEvents(data.events);
       }
+
+      // Wait for minimum display time to elapse
+      await minDisplayPromise;
     } catch (_error) {
       // Error fetching events - silently fail
+      await minDisplayPromise;
     } finally {
       setEventsLoading(false);
+      setShowLoading(false);
     }
   };
 
@@ -348,9 +360,11 @@ export default function Home() {
             </div>
           </div>
 
-          {eventsLoading ? (
-            <div className="text-center py-8">
-              <div className="text-gray-400">Loading your events...</div>
+          {(eventsLoading || showLoading) ? (
+            <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+              <SkeletonCard />
+              <SkeletonCard />
+              <SkeletonCard />
             </div>
           ) : events.length === 0 ? (
             <div className="text-center py-12 bg-gray-800 rounded-lg">

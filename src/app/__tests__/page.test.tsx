@@ -215,7 +215,9 @@ describe('Event Dashboard (Home Page)', () => {
 
       render(<Home />)
 
-      expect(screen.getByText(/loading your events/i)).toBeInTheDocument()
+      // Should show skeleton loaders instead of old text
+      const skeletonCards = screen.getAllByRole('status')
+      expect(skeletonCards.length).toBeGreaterThan(0)
     })
   })
 
@@ -252,6 +254,11 @@ describe('Event Dashboard (Home Page)', () => {
 
       await user.click(screen.getByRole('button', { name: 'Active' }))
 
+      // Wait for content to load
+      await waitFor(() => {
+        expect(screen.getByText('Active Event High Response')).toBeInTheDocument()
+      })
+
       // Should show active events
       expect(screen.getByText('Active Event High Response')).toBeInTheDocument()
       expect(screen.getByText('Active Event Medium Response')).toBeInTheDocument()
@@ -272,6 +279,11 @@ describe('Event Dashboard (Home Page)', () => {
 
       await user.click(screen.getByRole('button', { name: 'Finalized' }))
 
+      // Wait for content to load
+      await waitFor(() => {
+        expect(screen.getByText('Finalized Event')).toBeInTheDocument()
+      })
+
       // Should only show finalized event
       expect(screen.getByText('Finalized Event')).toBeInTheDocument()
 
@@ -288,6 +300,11 @@ describe('Event Dashboard (Home Page)', () => {
       })
 
       await user.click(screen.getByRole('button', { name: 'Expired' }))
+
+      // Wait for content to load
+      await waitFor(() => {
+        expect(screen.getByText('Expired Event')).toBeInTheDocument()
+      })
 
       // Should only show expired event
       expect(screen.getByText('Expired Event')).toBeInTheDocument()
@@ -335,7 +352,9 @@ describe('Event Dashboard (Home Page)', () => {
 
       await user.click(screen.getByRole('button', { name: 'Finalized' }))
 
-      expect(screen.getByText(/no events match the selected filter/i)).toBeInTheDocument()
+      await waitFor(() => {
+        expect(screen.getByText(/no events match the selected filter/i)).toBeInTheDocument()
+      })
     })
   })
 
@@ -383,6 +402,11 @@ describe('Event Dashboard (Home Page)', () => {
 
       await user.selectOptions(screen.getByLabelText(/sort by/i), 'name')
 
+      // Wait for content to load (skeleton loaders to disappear)
+      await waitFor(() => {
+        expect(screen.getByText('Active Event High Response')).toBeInTheDocument()
+      })
+
       const eventCards = screen.getAllByText(/event/i).filter(el =>
         el.tagName === 'H4'
       )
@@ -402,6 +426,11 @@ describe('Event Dashboard (Home Page)', () => {
       })
 
       await user.selectOptions(screen.getByLabelText(/sort by/i), 'status')
+
+      // Wait for content to load (skeleton loaders to disappear)
+      await waitFor(() => {
+        expect(screen.getByText('Active Event High Response')).toBeInTheDocument()
+      })
 
       const eventCards = screen.getAllByText(/event/i).filter(el =>
         el.tagName === 'H4'

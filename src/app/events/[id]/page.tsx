@@ -6,6 +6,7 @@ import { format } from 'date-fns';
 import { AvailabilityVisualization } from '@/components/AvailabilityVisualization';
 import { Navigation } from '@/components/Navigation';
 import { FinalizationConfirmationDialog } from '@/components/FinalizationConfirmationDialog';
+import { EventDetailSkeleton } from '@/components/EventDetailSkeleton';
 
 interface DashboardPageProps {
   params: {
@@ -19,6 +20,7 @@ export default function EventDashboard({ params }: DashboardPageProps) {
 
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [showLoading, setShowLoading] = useState(true);
   const [finalizing, setFinalizing] = useState(false);
   const [expandedParticipants, setExpandedParticipants] = useState<Set<string>>(new Set());
   const [copiedLink, setCopiedLink] = useState(false);
@@ -57,9 +59,12 @@ export default function EventDashboard({ params }: DashboardPageProps) {
     }
   };
 
-  // Initial fetch on component mount
+  // Initial fetch on component mount with minimum 300ms display time
   useEffect(() => {
+    const minDisplayTimer = setTimeout(() => setShowLoading(false), 300);
     fetchEventData();
+
+    return () => clearTimeout(minDisplayTimer);
   }, [params.id]);
 
   // Real-time updates: Poll every 30 seconds for new responses
@@ -293,12 +298,8 @@ Looking forward to seeing everyone there!`;
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-white">Loading event data...</div>
-      </div>
-    );
+  if (loading || showLoading) {
+    return <EventDetailSkeleton />;
   }
 
   if (!data) {
