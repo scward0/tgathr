@@ -1,223 +1,248 @@
 # tgathr
 
-A modern event scheduling application that simplifies the process of finding optimal meeting times for groups. Built as a Penn State SWENG 894 capstone project demonstrating advanced scheduling algorithms and modern web development practices.
+A modern event scheduling application that simplifies finding optimal meeting times for groups. Built with intelligent scheduling algorithms, real-time availability tracking, and multi-channel notifications.
 
-## Overview
+## Features
 
-tgathr helps users create events and collect availability from participants to automatically find the best meeting times. The application supports both single-day meetings and multi-day events with intelligent scheduling optimization.
-
-### Key Features
-
-- **Event Creation**: Create single-day meetings or multi-day events with customizable parameters
-- **Smart Scheduling**: Advanced algorithm finds optimal times based on participant availability
-- **Multiple Communication Channels**: Email and SMS notifications for participants
-- **Responsive Design**: Works seamlessly on desktop and mobile devices
-- **Real-time Availability Collection**: Participants can submit their availability through personalized links
-- **Automatic Optimization**: Considers preferred times, duration requirements, and participant constraints
+### Smart Scheduling
+- **Intelligent Algorithm** — Finds optimal meeting times by analyzing participant overlap, time preferences, and scheduling constraints
+- **Top 5 Recommendations** — Ranked suggestions with participation counts, availability percentages, and conflict analysis
+- **Heatmap Visualization** — Interactive grid showing availability patterns across dates and time periods
 
 ### Event Types
 
 **Single-Day Events**
-- Meetings, dinners, parties
+- Meetings, dinners, parties, conferences
 - Configurable duration (1-4 hours or all-day)
-- Preferred time slots (morning, afternoon, evening)
+- Time preferences (morning, afternoon, evening)
 
 **Multi-Day Events**
-- Vacations, trips, retreats
+- Vacations, retreats, trips
 - Configurable length (2-7 days)
-- Timing preferences (weekdays, weekends, any)
+- Timing preferences (weekends-only, include-weekdays, flexible)
+
+### Participant Experience
+- **Self-Registration** — Shareable links for easy participant signup
+- **No Account Required** — Participants submit availability without authentication
+- **Edit Tokens** — Participants can update their responses anytime
+- **Mobile-Optimized** — Responsive design works on all devices
+
+### Notifications
+- **Email Invitations** — Event details with direct availability submission links
+- **SMS Notifications** — Optional text message updates with A2P 10DLC compliance
+- **Calendar Integration** — ICS file attachments for finalized events
+- **Confirmation Alerts** — Automatic notifications when events are finalized
+
+### Dashboard & Analytics
+- **Response Tracking** — Real-time participant response counts with 30-second auto-refresh
+- **Event Filtering** — Filter by status (active, finalized, expired)
+- **One-Click Finalization** — Select recommended time and notify all participants instantly
+- **Copy-to-Clipboard** — Easy sharing of event links and invitation messages
 
 ## Technology Stack
 
-- **Frontend**: Next.js 14, React 18, TypeScript, Tailwind CSS
-- **Backend**: Next.js API Routes, Prisma ORM
-- **Database**: PostgreSQL (production), SQLite (development/testing)
-- **Authentication**: Stack Auth (Neon integration)
-- **Communication**: Nodemailer (email), Twilio (SMS)
-- **Testing**: Jest, Playwright, Testing Library
-- **Deployment**: Vercel
-
-## Project Structure
-
-```
-├── src/
-│   ├── app/                    # Next.js App Router pages and API routes
-│   ├── components/             # Reusable React components
-│   ├── lib/                    # Business logic and utilities
-│   ├── types/                  # TypeScript type definitions
-│   └── generated/              # Generated Prisma client
-├── prisma/                     # Database schema and migrations
-├── e2e/                        # End-to-end tests
-└── docs/                       # Project documentation
-```
+| Category | Technologies |
+|----------|-------------|
+| Frontend | Next.js 14, React 18, TypeScript, Tailwind CSS |
+| Backend | Next.js API Routes, Prisma ORM |
+| Database | PostgreSQL (production), SQLite (development) |
+| Auth | Stack Auth |
+| Email | Nodemailer (Gmail SMTP) |
+| SMS | Twilio |
+| Testing | Jest, Playwright, Testing Library |
+| Deployment | Vercel |
 
 ## Getting Started
 
 ### Prerequisites
-
-- Node.js 18 or later
-- PostgreSQL (for production) or SQLite (for development)
-- Environment variables (see `.env.example`)
+- Node.js 18+
+- PostgreSQL (production) or SQLite (development)
 
 ### Installation
 
-1. Clone the repository:
 ```bash
-git clone [repository-url]
+# Clone the repository
+git clone https://github.com/your-username/tgathr.git
 cd tgathr
-```
 
-2. Install dependencies:
-```bash
+# Install dependencies
 npm install
-```
 
-3. Set up environment variables:
-```bash
+# Set up environment variables
 cp .env.example .env.local
-# Edit .env.local with your configuration
-```
 
-4. Set up the database:
-```bash
+# Generate Prisma client and set up database
 npx prisma generate
 npx prisma db push
-```
 
-5. Start the development server:
-```bash
+# Start development server
 npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) to view the application.
 
-## Available Scripts
+### Environment Variables
 
-### Development
-- `npm run dev` - Start development server with database generation
-- `npm run build` - Build production application
-- `npm start` - Start production server
-- `npm run lint` - Run ESLint
-- `npm run typecheck` - Run TypeScript type checking
+```bash
+# Database
+DATABASE_URL=postgresql://...
 
-### Testing
-- `npm run test` - Run unit and integration tests
-- `npm run test:watch` - Run tests in watch mode
-- `npm run test:coverage` - Run tests with coverage report
-- `npm run test:ci` - Run tests in CI mode
-- `npm run test:e2e` - Run end-to-end tests
-- `npm run test:all` - Run all tests (unit + E2E)
+# Email (Gmail)
+EMAIL_USER=your-email@gmail.com
+EMAIL_APP_PASSWORD=your-app-password
 
-### Database
-- `npm run test:db:setup` - Set up test database
+# SMS (Twilio)
+TWILIO_ACCOUNT_SID=your-account-sid
+TWILIO_AUTH_TOKEN=your-auth-token
+TWILIO_PHONE_NUMBER=+1234567890
 
-## Core Algorithm
+# Application
+NEXT_PUBLIC_BASE_URL=http://localhost:3000
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+```
 
-The scheduling algorithm implements a sophisticated scoring system that:
+## Project Structure
 
-1. **Evaluates Time Windows**: Finds all possible time slots within the availability window
-2. **Calculates Participant Overlap**: Determines how many participants are available for each slot
-3. **Applies Preference Scoring**: Prioritizes preferred times and durations
-4. **Optimizes for Convenience**: Considers factors like round hours and weekend preferences
-5. **Ranks Options**: Returns the best options sorted by score
+```
+src/
+├── app/                      # Next.js App Router
+│   ├── api/                  # API endpoints
+│   │   ├── events/           # Event CRUD, finalization, cleanup
+│   │   ├── availability/     # Availability submission
+│   │   ├── participants/     # Participant management
+│   │   └── public/           # Public endpoints (no auth)
+│   ├── events/               # Event pages (new, dashboard)
+│   ├── e/[shareToken]/       # Public event registration
+│   ├── p/[editToken]/        # Participant edit page
+│   └── respond/[token]/      # Availability form
+├── components/               # React components
+│   ├── EventForm.tsx         # Event creation
+│   ├── AvailabilityForm.tsx  # Availability grid
+│   ├── AvailabilityVisualization.tsx  # Heatmap
+│   └── Navigation.tsx        # Global nav
+├── lib/                      # Business logic
+│   ├── services/             # Domain services
+│   ├── calendar/             # ICS generation
+│   ├── scheduling-algorithm.ts
+│   ├── email.ts
+│   └── sms.ts
+└── types/                    # TypeScript definitions
+```
 
-The algorithm supports both single-day meetings (finding optimal time slots) and multi-day events (finding optimal date ranges).
+## Scripts
+
+```bash
+# Development
+npm run dev          # Start dev server
+npm run build        # Production build
+npm run lint         # Run ESLint
+npm run typecheck    # Type checking
+
+# Testing
+npm run test         # Run unit tests
+npm run test:watch   # Watch mode
+npm run test:coverage # Coverage report
+npm run test:e2e     # End-to-end tests
+npm run test:all     # All tests
+```
 
 ## API Endpoints
 
-### Events
-- `POST /api/events` - Create new event
-- `GET /api/events/my-events` - Get user's events
-- `GET /api/events/[id]` - Get event details
-- `POST /api/events/[id]/finalize` - Finalize event time
+### Authenticated
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/events` | Create event |
+| GET | `/api/events/my-events` | List user's events |
+| GET | `/api/events/[id]` | Event details with recommendations |
+| DELETE | `/api/events/[id]` | Delete event |
+| POST | `/api/events/[id]/finalize` | Finalize event time |
+| DELETE | `/api/events/[id]/participants/[id]` | Remove participant |
 
-### Availability
-- `POST /api/availability` - Submit participant availability
-- `GET /api/participants/[token]` - Get participant information
+### Public
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/public/events/[token]/details` | Event info for registration |
+| POST | `/api/public/events/[token]/join` | Register as participant |
+| GET | `/api/public/events/[token]/calendar` | Download ICS file |
+| POST | `/api/availability` | Submit availability |
+| GET | `/api/participants/[token]` | Get participant info |
 
-## Database Schema
+## How It Works
 
-The application uses Prisma ORM with the following main entities:
+### 1. Create Event
+Authenticated users create events with name, dates, type, and preferences.
 
-- **Event**: Core event information and settings
-- **Participant**: Event participants and their details
-- **TimeSlot**: Individual availability submissions
-- **User**: Application users (authenticated)
+### 2. Invite Participants
+Share the unique event link. Participants register with their name and optional phone number.
 
-## Authentication
+### 3. Collect Availability
+Participants select available time slots from an interactive grid.
 
-Integration with Stack Auth provides:
-- User registration and login
-- Session management
-- Protected API routes
-- User profile management
+### 4. Get Recommendations
+The algorithm analyzes all responses and suggests optimal times ranked by:
+- Participant overlap count
+- Preference matching
+- Duration requirements
+- Convenience factors (round hours, weekend preferences)
 
-## Communication
+### 5. Finalize
+Creator selects a recommended time. All participants receive confirmation via email (with ICS attachment) and SMS (if opted in).
 
-**Email Notifications**
-- Event invitations with availability links
-- Event finalization notifications
-- Powered by Nodemailer with SMTP configuration
+## Scheduling Algorithm
 
-**SMS Notifications** (Optional)
-- Availability reminders
-- Event updates
-- Powered by Twilio
+The core algorithm evaluates time windows using a multi-factor scoring system:
 
-## Testing Strategy
+1. **Participant Overlap** — Maximizes attendance
+2. **Preference Matching** — Respects time-of-day and duration preferences
+3. **Convenience Scoring** — Bonus for round hours, weekend alignment
+4. **Date Diversity** — Ensures recommendations span different dates
+5. **Timezone Awareness** — Handles distributed teams
 
-Comprehensive test coverage includes:
-- **Unit Tests**: Business logic and utilities (Jest)
-- **Integration Tests**: API endpoints with database operations
-- **Component Tests**: React components with user interactions
-- **End-to-End Tests**: Complete user workflows (Playwright)
+Returns top 5 options with detailed reasoning for each recommendation.
 
-Target coverage: 85% overall, 100% for critical scheduling algorithm.
+## Testing
 
-See [testing.md](./testing.md) for detailed testing documentation.
+- **Unit Tests** — Business logic, algorithm edge cases
+- **Integration Tests** — API endpoints with database operations
+- **Component Tests** — React components with user interactions
+- **E2E Tests** — Complete user workflows with Playwright
+
+Target: 85% coverage overall, 100% for scheduling algorithm.
+
+## Compliance
+
+### SMS (A2P 10DLC)
+- Explicit opt-in with timestamp tracking
+- "STOP to opt out" message included
+- Only sends to opted-in participants
+- Compliance documentation at `/compliance/sms-consent`
+
+### Data Handling
+- Events expire after 30 days
+- Automatic cleanup of expired data
+- Optional phone/email fields
+- Cascade deletion for data integrity
 
 ## Deployment
 
-The application is configured for deployment on Vercel:
+Configured for Vercel deployment:
 
 1. Connect repository to Vercel
 2. Configure environment variables
-3. Set up PostgreSQL database (recommend Neon)
-4. Deploy automatically on push to main branch
-
-## Performance Considerations
-
-- **Database Optimization**: Efficient queries with Prisma
-- **Caching Strategy**: Optimized API responses
-- **Bundle Optimization**: Tree-shaking and code splitting
-- **Image Optimization**: Next.js automatic optimization
-
-## Security
-
-- **Input Validation**: Comprehensive schema validation with Zod
-- **Authentication**: Secure session management
-- **API Protection**: Route-level authentication
-- **Data Sanitization**: SQL injection prevention with Prisma
-
-## Contributing
-
-This is an academic capstone project. For development:
-
-1. Follow the established code style (ESLint + Prettier)
-2. Write tests for new features
-3. Update documentation as needed
-4. Ensure all tests pass before submitting changes
+3. Set up PostgreSQL database (Neon recommended)
+4. Deploy on push to main
 
 ## Academic Context
 
 **Course**: Penn State SWENG 894 - Software Engineering Capstone
-**Focus**: Advanced algorithms, modern web development, testing strategies
-**Key Learning Objectives**: Full-stack development, database design, algorithm implementation, comprehensive testing
+
+Demonstrates advanced software engineering practices:
+- Full-stack TypeScript development
+- Intelligent scheduling algorithms
+- Multi-channel notification systems
+- Comprehensive testing strategies
+- Production-ready deployment
 
 ## License
 
-This project is part of an academic assignment and is not licensed for commercial use.
-
-## Support
-
-For questions about the implementation or academic aspects of this project, please refer to the documentation in the `docs/` directory or contact the development team.
+Academic project - not licensed for commercial use.
